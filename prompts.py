@@ -96,15 +96,15 @@ When given a story scenario with 4 numbered options, you must:
             print(f"Failed to save {filepath}: {e}")
             return False
 
-    @classmethod
-    def save_gm_prompt(cls, content: str) -> bool:
-        """Save Game Master prompt"""
-        return cls.save_prompt(Config.GM_PROMPT_FILE, content)
-
-    @classmethod
-    def save_player_prompt(cls, content: str) -> bool:
-        """Save Player prompt"""
-        return cls.save_prompt(Config.PLAYER_PROMPT_FILE, content)
+    # @classmethod
+    # def save_gm_prompt(cls, content: str) -> bool:
+    #     """Save Game Master prompt"""
+    #     return cls.save_prompt(Config.GM_PROMPT_FILE, content)
+    #
+    # @classmethod
+    # def save_player_prompt(cls, content: str) -> bool:
+    #     """Save Player prompt"""
+    #     return cls.save_prompt(Config.PLAYER_PROMPT_FILE, content)
 
     @classmethod
     def get_prompt_info(cls) -> dict:
