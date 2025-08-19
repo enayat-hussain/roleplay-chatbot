@@ -71,9 +71,6 @@ rpg-chatbot/
 ├── requirements.txt    # Python dependencies
 ├── .env.example        # Environment variables template
 ├── README.md          # This file
-└── prompts/           # Prompt files directory
-    ├── game_master.txt # Game Master prompt
-    └── player.txt      # Player prompt
 ```
 
 ## ⚙️ Configuration
@@ -94,10 +91,10 @@ Copy `.env.example` to `.env` and customize:
 
 ### Custom Prompts
 
-Customize the game by editing files in the `prompts/` directory:
+Customize the game by editing files
 
-- `prompts/game_master.txt` - Instructions for the Game Master AI
-- `prompts/player.txt` - Instructions for the Player AI
+- `gm_prompts.txt` - Instructions for the Game Master AI
+- `rp_prompts.txt` - Instructions for the Player AI
 
 ## 🎮 Usage
 
