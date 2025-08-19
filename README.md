@@ -36,7 +36,7 @@ A real-time streaming RPG chatbot powered by Ollama and Gradio that creates inte
 1. **Clone the Repository**
    ```bash
    git clone <your-repo-url>
-   cd rpg-chatbot
+   cd roleplay-chatbot
    ```
 
 2. **Install Dependencies**
