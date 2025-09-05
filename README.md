@@ -1,42 +1,56 @@
 # 🎲 AI RPG Adventure Game
 
-A real-time streaming RPG chatbot powered by Ollama and Gradio that creates interactive text-based adventures.
+A real-time streaming RPG chatbot with **multi-provider support** that creates interactive text-based adventures using various AI services.
 
 ## ✨ Features
 
-- **Live Streaming**: Watch AI responses generate in real-time
-- **Interactive RPG**: Dynamic story with player choices
-- **Auto-play Mode**: Watch AI vs AI gameplay
-- **Configurable**: Easy customization through environment variables
-- **Export Options**: Save adventures as Markdown or plain text
-- **Connection Testing**: Built-in Ollama connection diagnostics
+### Core Features
+* **Live Streaming**: Watch AI responses generate in real-time with proper Unicode handling
+* **Multi-Provider Support**: Works with OpenAI, Anthropic, Ollama, Groq, LM Studio, and more
+* **Dynamic Provider Switching**: Change AI providers and models during gameplay
+* **Interactive RPG**: Dynamic story with player choices and intelligent final step handling
+* **Auto-play Mode**: Watch AI vs AI gameplay with configurable delays
+* **Export Options**: Save adventures as Markdown or plain text
+* **Connection Testing**: Built-in API connection diagnostics for all providers
+
+### Supported AI Providers
+* **OpenAI** (GPT-4, GPT-4o, GPT-3.5-turbo)
+* **Anthropic** (Claude-3.5 Sonnet, Claude-3 Haiku, Claude-3 Opus)  
+* **Ollama** (Local: Llama 3.1, Mistral, CodeLlama, Vicuna, Gemma)
+* **Groq** (Fast inference: Llama, Mixtral, Gemma models)
+* **LM Studio** (Local model server)
+* **Text Generation WebUI** (oobabooga)
+* **VLLM** (High-performance local serving)
+* **Custom Providers** (Any OpenAI-compatible API)
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-1. **Install Ollama**
-   ```bash
-   # Download from https://ollama.ai or use package manager
-   curl -fsSL https://ollama.ai/install.sh | sh
-   ```
+**Choose Your AI Provider:**
 
-2. **Pull Required Model**
-   ```bash
-   ollama pull llama3
-   ```
+**For Local AI (Recommended for beginners):**
+```bash
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
 
-3. **Start Ollama Server**
-   ```bash
-   ollama serve
-   ```
+# Pull a model
+ollama pull llama3.1
+
+# Start the server
+ollama serve
+```
+
+**For Cloud AI:**
+- Get API keys from OpenAI, Anthropic, or Groq
+- No local setup required
 
 ### Installation
 
 1. **Clone the Repository**
    ```bash
    git clone <your-repo-url>
-   cd roleplay-chatbot
+   cd rpg-chatbot
    ```
 
 2. **Install Dependencies**
@@ -44,10 +58,24 @@ A real-time streaming RPG chatbot powered by Ollama and Gradio that creates inte
    pip install -r requirements.txt
    ```
 
-3. **Configure Environment** (Optional)
+3. **Configure Environment Variables** (Optional - can set via UI)
    ```bash
    cp .env.example .env
-   # Edit .env file with your preferences
+   ```
+   
+   Example `.env` configuration:
+   ```env
+   # OpenAI
+   OPENAI_API_KEY=your_openai_key_here
+   
+   # Anthropic
+   ANTHROPIC_API_KEY=your_anthropic_key_here
+   
+   # Groq
+   GROQ_API_KEY=your_groq_key_here
+   
+   # Generic fallback
+   API_KEY=your_api_key_here
    ```
 
 4. **Run the Application**
@@ -56,133 +84,227 @@ A real-time streaming RPG chatbot powered by Ollama and Gradio that creates inte
    ```
 
 5. **Open in Browser**
-   - Navigate to http://127.0.0.1:7860
-   - Click "🚀 Start Adventure" to begin!
+   * Navigate to [http://127.0.0.1:7860](http://127.0.0.1:7860)
+   * Select your AI provider from the dropdown
+   * Add API key if required
+   * Click "Start" to begin your adventure!
+
+## 🎮 Usage
+
+### Getting Started
+1. **Select Provider**: Choose from OpenAI, Anthropic, Ollama, etc.
+2. **Select Model**: Pick the specific model you want to use
+3. **Add API Key**: Enter your API key (if required by provider)
+4. **Set Max Steps**: Choose adventure length (1-100 steps)
+5. **Start Playing**: Click "Start" and make choices!
+
+### Game Modes
+
+#### Manual Mode
+* Click "Start" to begin your adventure
+* Use "Next" to advance step by step
+* Watch responses stream in real-time
+* **Final steps automatically provide 8-9 line conclusions**
+
+#### Auto-play Mode
+* Click "Auto-play" for hands-free adventure
+* Set delay between steps (0-10 seconds)
+* Perfect for demonstrations or relaxed gameplay
+* Watch AI make choices and respond automatically
+
+#### Advanced Features
+* **Provider Testing**: Use "System" tab to test different providers
+* **Export & Save**: Save memorable adventures as Markdown/text
+* **Game Statistics**: View detailed game information and progress
 
 ## 📁 Project Structure
 
 ```
 rpg-chatbot/
-├── app.py              # Main application entry point
-├── config.py           # Configuration and settings
-├── prompts.py          # Prompt management
-├── game_logic.py       # Game state and logic
-├── chatbot.py          # Ollama API client
-├── requirements.txt    # Python dependencies
-├── .env.example        # Environment variables template
-├── README.md          # This file
+├── app.py                # Main Gradio application (UI + provider selection)
+├── chatbot.py            # Universal AI client with auto-detection of LLMs
+├── game_logic.py         # RPG game state management + intelligent endings
+├── config.py             # Configuration settings (paths, constants, defaults)
+├── prompts.py            # Centralized prompt definitions (optional helper)
+│
+├── requirements.txt      # Python dependencies
+├── .env.example          # Template for environment variables
+│
+├── prompts/              # Customizable prompt templates
+│   ├── gm_prompt.txt     # Game Master instructions
+│   └── rp_prompt.txt # Player role instructions
+│
+├── chat_logs/            # Auto-saved conversation logs (.txt files)
+│
+└── README.md             # Project documentation
+
 ```
 
 ## ⚙️ Configuration
 
+### Default Provider URLs and Models
+
+The application comes with pre-configured settings for each provider:
+
+| Provider | Default URL | Default Model | API Key Required |
+|----------|-------------|---------------|------------------|
+| **OpenAI (GPT)** | `https://api.openai.com/v1/chat/completions` | `gpt-4o-mini` | ✅ Yes |
+| **Anthropic (Claude)** | `https://api.anthropic.com/v1/messages` | `claude-3-haiku-20240307` | ✅ Yes |
+| **Ollama (Local)** | `http://localhost:11434/v1/chat/completions` | `llama3.1` | ❌ No |
+| **Groq** | `https://api.groq.com/openai/v1/chat/completions` | `llama-3.1-8b-instant` | ✅ Yes |
+| **LM Studio** | `http://localhost:1234/v1/chat/completions` | `local-model` | ❌ No |
+| **Text Generation WebUI** | `http://localhost:5000/v1/chat/completions` | `local-model` | ❌ No |
+| **VLLM** | `http://localhost:8000/v1/chat/completions` | `local-model` | ❌ No |
+
+### Available Models by Provider
+
+**OpenAI Models:**
+- `gpt-4o` (latest GPT-4 Omni)
+- `gpt-4o-mini` (cost-efficient, recommended)
+- `gpt-4-turbo` (previous generation)
+- `gpt-3.5-turbo` (legacy, cost-effective)
+
+**Anthropic Models:**
+- `claude-3-5-sonnet-20241022` (latest, most capable)
+- `claude-3-haiku-20240307` (fast, cost-effective)
+- `claude-3-opus-20240229` (most powerful, expensive)
+
+**Groq Models:**
+- `llama-3.1-8b-instant` (recommended, very fast)
+- `meta-llama/llama-4-scout-17b-16e-instruct` (experimental)
+- `gemma2-9b-it` (Google's Gemma model)
+
+**Ollama Models:** (depends on what you have installed)
+- `llama3.1` (recommended)
+- `llama3:latest`
+- `mistral`
+- `codellama`
+- `vicuna`
+- `gemma:2b`
+
 ### Environment Variables
 
-Copy `.env.example` to `.env` and customize:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `OLLAMA_HOST` | localhost | Ollama server host |
-| `OLLAMA_PORT` | 11434 | Ollama server port |
-| `OLLAMA_MODEL` | llama3 | AI model to use |
-| `SERVER_HOST` | 127.0.0.1 | Gradio server host |
-| `SERVER_PORT` | 7860 | Gradio server port |
-| `DEFAULT_MAX_STEPS` | 5 | Default number of game steps |
-| `AI_TEMPERATURE` | 0.8 | AI creativity level (0.0-2.0) |
+| Variable            | Default                    | Description                                  |
+|---------------------|----------------------------|----------------------------------------------|
+| `API_PROVIDER`      | auto                       | API provider (auto-detected)                |
+| `API_URL`           | varies by provider         | API endpoint URL                             |
+| `MODEL`             | varies by provider         | AI model name                                |
+| `API_KEY`           | None                       | API key for authentication                   |
+| `SERVER_HOST`       | 127.0.0.1                  | Gradio server host                           |
+| `SERVER_PORT`       | 7860                       | Gradio server port                           |
+| `DEFAULT_MAX_STEPS` | 5                          | Default number of game steps                 |
+| `MAX_STEPS_LIMIT`   | 100                        | Maximum allowed steps                        |
+| `DEFAULT_DELAY`     | 2                          | Default delay between steps (seconds)        |
+| `MAX_DELAY`         | 10                         | Maximum delay between steps                  |
+| `AI_TEMPERATURE`    | 0.8                        | AI creativity level (0.0-2.0)               |
+| `AI_MAX_TOKENS`     | 500                        | Maximum tokens per response                  |
 
 ### Custom Prompts
 
-Customize the game by editing files
+Customize the game experience by editing:
+* `prompts/gm_prompt.txt` - Instructions for the Game Master AI
+* `prompts/rp_prompt.txt` - Instructions for the Player AI (auto-play mode)
 
-- `gm_prompts.txt` - Instructions for the Game Master AI
-- `rp_prompts.txt` - Instructions for the Player AI
+## 🛠️ Local AI Setup
 
-## 🎮 Usage
+### Ollama (Recommended)
+```bash
+# Install and setup
+curl -fsSL https://ollama.ai/install.sh | sh
+ollama pull llama3.1
+ollama serve
+```
+- URL: `http://localhost:11434/v1/chat/completions`
+- No API key required
+- Best for privacy and offline use
 
-### Manual Mode
-1. Click "🚀 Start Adventure" to begin
-2. Use "➡️ Next Step" to advance the story step by step
-3. Watch AI responses stream in real-time
+### LM Studio
+1. Download LM Studio from their website
+2. Load your preferred model
+3. Start the local server
+- URL: `http://localhost:1234/v1/chat/completions`
+- No API key required
 
-### Auto-play Mode
-1. Set desired number of steps and delay
-2. Click "🎬 Auto-play" to watch AI vs AI gameplay
-3. Enjoy the automated storytelling experience
-
-### Additional Features
-- **📊 Game Info**: View current game statistics
-- **📄 Export**: Save adventures as Markdown or text files
-- **🔧 System Status**: Test Ollama connection and view settings
-
-## 🛠️ Development
-
-### Code Organization
-
-The codebase is organized into focused modules:
-
-- **`config.py`**: All configuration, URLs, and settings
-- **`prompts.py`**: Prompt loading, saving, and management
-- **`game_logic.py`**: Game state, validation, and formatting
-- **`chatbot.py`**: Ollama API client and communication
-- **`app.py`**: Main application and Gradio interface
-
-### Key Classes
-
-- `Config`: Centralized configuration management
-- `PromptManager`: Handle prompt files and defaults
-- `GameState`: Manage game progression and history
-- `OllamaClient`: Handle API communication
-- `RPGApp`: Main application orchestration
+### Text Generation WebUI
+```bash
+git clone https://github.com/oobabooga/text-generation-webui.git
+cd text-generation-webui
+./start_linux.sh --api --listen
+```
+- URL: `http://localhost:5000/v1/chat/completions`
 
 ## 🔧 Troubleshooting
 
+### Recent Fixes Applied
+* ✅ **Fixed Unicode/spelling issues** – Proper UTF-8 encoding handling  
+* ✅ **Improved streaming reliability** – Better error handling and fallbacks  
+* ✅ **Chat logs saving** – Each conversation now saved as a `.txt` file  
+* ✅ **Multi-LLM support** – App now works seamlessly with different LLM providers  
+* ✅ **Step-limited endings** – Story automatically ends after reaching max number of steps  
+* ✅ **UI improvements** – Cleaner layout, better alignment, and more intuitive interactions  
+
+
 ### Common Issues
 
-1. **Connection Error**
-   - Ensure Ollama is running: `ollama serve`
-   - Check if model is installed: `ollama list`
-   - Verify host/port in `.env` file
+**Connection Errors**
+* Verify API key is correct
+* Check if local servers are running (`ollama serve`)
+* Use "System" tab to test connections
 
-2. **Model Not Found**
-   - Install required model: `ollama pull llama3`
-   - Check available models: `ollama list`
+**Provider Issues**
+* Try switching providers via the dropdown
+* Test different models for your provider
+* Check API rate limits and billing status
 
-3. **Slow Responses**
-   - Reduce `AI_NUM_PREDICT` in `.env`
-   - Use a smaller model if available
-   - Check system resources
+**Response Quality**
+* Adjust temperature settings for creativity
+* Try different models within the same provider
+* Use the export feature to save good adventures
 
 ### System Status
-
-Use the built-in "🔍 Test Ollama Connection" feature to diagnose issues.
+Use the built-in connection testing features:
+* **"Test API Connection"** - Check current configuration
+* **Provider Testing** - Test specific provider/model combinations
+* **System Tab** - Comprehensive diagnostics
 
 ## 📋 Requirements
 
-- Python 3.8+
-- Ollama installed and running
-- At least 4GB RAM (for llama3 model)
-- Internet connection (for initial model download)
+* Python 3.8+
+* AI provider access (local server OR cloud API key)
+* 4GB+ RAM (for local models)
+* Internet connection (for cloud providers)
 
 ## 🤝 Contributing
 
+Areas for improvement:
+* Additional AI provider support
+* Enhanced prompt templates  
+* Better error handling
+* UI/UX improvements
+
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📜 License
-
-This project is open source. Please check the license file for details.
+3. Test thoroughly with multiple providers
+4. Submit a pull request
 
 ## 🆘 Support
 
 If you encounter issues:
 
-1. Check the troubleshooting section above
-2. Use the built-in connection test feature
-3. Review the console output for error messages
-4. Open an issue on GitHub with detailed information
+1. **Check troubleshooting section** above
+2. **Use built-in connection testing** via System tab
+3. **Try different providers** - some may work better than others
+4. **Review console output** for detailed error messages
+5. **Open GitHub issue** with provider details and error logs
+
+### Provider-Specific Support
+
+**OpenAI**: Check API billing and rate limits  
+**Anthropic**: Verify API key and model access  
+**Ollama**: Ensure `ollama serve` is running  
+**Groq**: Check free tier limits  
+**Local Models**: Verify server status and model loading
 
 ---
 
-*Built with ❤️ using Gradio and Ollama*
+*Built with ❤️ using Gradio and configurable AI APIs - Now supporting 8+ providers!*

@@ -1,5 +1,6 @@
 # utils.py
 
+
 def conv_to_gradio_format(conv_list):
     """Convert internal conversation format to Gradio messages format"""
     messages = []
@@ -9,6 +10,7 @@ def conv_to_gradio_format(conv_list):
         elif speaker == "Player":
             messages.append({"role": "user", "content": content})
     return messages
+
 
 def validate_gm_response(response):
     """Check if GM response has at least 4 numbered options"""
