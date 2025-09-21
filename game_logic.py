@@ -1,4 +1,5 @@
 import random
+import os
 from typing import List, Tuple, Generator, Dict, Any, Optional
 from config import Config, StatusMessages, ErrorMessages
 from pathlib import Path
@@ -11,249 +12,216 @@ logger = logging.getLogger(__name__)
 
 
 class ChatLogger:
-    """Handles writing chat messages"""
+    """Handles writing chat messages with robust file operations"""
 
     def __init__(self, log_dir: str = "chat_logs"):
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.session_file = None
 
-    def start_new_session(self):
+    def start_new_session(self, model_info: dict = None):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.session_file = self.log_dir / f"chat_session_{timestamp}.txt"
-        with open(self.session_file, "a", encoding="utf-8") as f:
-            f.write(f"=== New Chat Session: {timestamp} ===\n\n")
+        try:
+            with open(self.session_file, "a", encoding="utf-8") as f:
+                f.write(f"=== New Chat Session: {timestamp} ===\n")
+
+                # Add model information if provided
+                if model_info:
+                    f.write("=== Model Configuration ===\n")
+                    f.write(f"Provider: {model_info.get('provider', 'unknown')}\n")
+                    f.write(f"Model: {model_info.get('model', 'unknown')}\n")
+                    f.write(f"API URL: {model_info.get('api_url', 'unknown')}\n")
+                    if model_info.get('temperature'):
+                        f.write(f"Temperature: {model_info.get('temperature')}\n")
+                    if model_info.get('max_tokens'):
+                        f.write(f"Max Tokens: {model_info.get('max_tokens')}\n")
+                    f.write("=" * 30 + "\n")
+                f.write("\n")
+                f.flush()
+                os.fsync(f.fileno())
+        except Exception as e:
+            logger.error(f"Error creating log file: {e}")
 
     def append_message(self, role: str, message: str):
         if not self.session_file:
             self.start_new_session()
-        with open(self.session_file, "a", encoding="utf-8") as f:
-            f.write(f"[{role}] {message}\n")
+
+        if not message or not message.strip():
+            logger.warning(f"Empty message from {role}, skipping log")
+            return
+
+        try:
+            with open(self.session_file, "a", encoding="utf-8") as f:
+                f.write(f"[{role}] {message.strip()}\n")
+                f.flush()
+                os.fsync(f.fileno())
+            logger.info(f"Logged message from {role} ({len(message)} chars)")
+        except Exception as e:
+            logger.error(f"Error writing to log: {e}")
+
+    def append_system_message(self, message: str):
+        """Add system messages like game end notifications"""
+        self.append_message("SYSTEM", message)
+
+    def finalize_session(self):
+        """Call this when game ends to ensure all logs are saved"""
+        try:
+            self.append_system_message("=== Game Session Ended ===")
+        except Exception as e:
+            logger.error(f"Error finalizing session: {e}")
 
 
 class GameState:
-    """Manages RPG game state"""
+    """Manages RPG game state with improved logging and completion handling"""
 
-    def __init__(
-        self,
-        gm_prompt: str,
-        player_prompt: str,
-        model_name: Optional[str] = None,
-        chat_client=None,
-    ):
+    def __init__(self, gm_prompt: str, player_prompt: str, model_name: Optional[str] = None, chat_client=None):
         self.gm_history = [{"role": "system", "content": gm_prompt}]
         self.conversation = []
         self.step_count = 0
         self.chat_logger = ChatLogger()
-        self.chat_logger.start_new_session()
 
         if chat_client:
             self.chat_client = chat_client
         else:
             from chatbot import ChatClient
-
             self.chat_client = ChatClient(model=model_name)
+
+        # 🔧 Attach ChatLogger so final step responses are logged
+        self.chat_client.chat_logger = self.chat_logger
+
+        # Start new session with model info
+        self._start_session_with_model_info()
+
+    def _start_session_with_model_info(self):
+        """Start a new chat session with model information"""
+        model_info = {
+            'provider': getattr(self.chat_client, 'api_provider', 'unknown'),
+            'model': getattr(self.chat_client, 'model', 'unknown'),
+            'api_url': getattr(self.chat_client, 'api_url', 'unknown'),
+            'temperature': getattr(self.chat_client, 'ai_settings', {}).get('temperature', None),
+            'max_tokens': getattr(self.chat_client, 'ai_settings', {}).get('max_tokens', None)
+        }
+        self.chat_logger.start_new_session(model_info)
+        logger.info(f"Started new session with {model_info['provider']} / {model_info['model']}")
 
     def start_game_streaming(self) -> Generator[Tuple[bool, List, str], None, None]:
         """Starts the game by setting the scene and giving 4 options"""
         try:
-            self.gm_history.append(
-                {
-                    "role": "user",
-                    "content": "Begin the adventure. Set the scene and give me 4 options to choose from.",
-                }
-            )
+            initial_prompt = "Begin the adventure. Set the scene with vivid description and give me exactly 4 numbered options to choose from (1-4)."
+            self.gm_history.append({"role": "user", "content": initial_prompt})
 
-            # Set is_final_step to False for game start
             self.chat_client.is_final_step = False
-
             streamed_response = ""
+            chunk_count = 0
+
             for chunk in self.chat_client.chat_streaming(self.gm_history):
                 streamed_response += chunk
+                chunk_count += 1
                 temp_conversation = self.conversation + [("GM", streamed_response)]
                 yield True, temp_conversation, chunk
 
-            # Ensure fallback if empty
             if not streamed_response.strip():
-                streamed_response = (
-                    "The adventure begins, though the GM gave no details."
-                )
+                streamed_response = "The adventure begins in a mysterious location. You must choose your path forward."
+                logger.warning("Empty GM response, using fallback")
 
             self.gm_history.append({"role": "assistant", "content": streamed_response})
             self.conversation.append(("GM", streamed_response))
             self.chat_logger.append_message("GM", streamed_response)
 
-            # Yield final complete message to Gradio
             yield True, self.conversation, streamed_response
 
         except Exception as e:
+            logger.error(f"Error in start_game_streaming: {e}")
+            self.chat_logger.append_system_message(f"Error starting game: {str(e)}")
             yield False, [], f"{ErrorMessages.GAME_START}: {str(e)}"
 
-    def take_step_streaming(
-        self, player_choice: Optional[int] = None, max_steps: int = 50
-    ) -> Generator[Tuple[bool, List, int, str], None, None]:
-        """Streaming player step with robust final step handling"""
+    def _is_response_complete(self, response: str) -> bool:
+        if not response or len(response.strip()) < 10:
+            return False
+        stripped = response.rstrip()
+        if not stripped.endswith(('.', '!', '?', '"', "'", ')', ']')):
+            return False
+        incomplete_patterns = ["barely above a", "he says as he", "she whispers as", "you notice that", "in the distance you can", "suddenly you hear"]
+        lower_response = response.lower()
+        for pattern in incomplete_patterns:
+            if lower_response.endswith(pattern):
+                return False
+        return True
+
+    def take_step_streaming(self, player_choice: Optional[int] = None, max_steps: int = 50) -> Generator[Tuple[bool, List, int, str], None, None]:
+        """Streaming player step with robust completion handling"""
 
         try:
             if player_choice is None:
                 player_choice = random.choice([1, 2, 3, 4])
 
-            self.conversation.append(("Player", str(player_choice)))
-            self.chat_logger.append_message("Player", str(player_choice))
+            player_choice_str = str(player_choice)
+            self.conversation.append(("Player", player_choice_str))
+            self.chat_logger.append_message("Player", player_choice_str)
             yield True, self.conversation, player_choice, ""
 
             self.step_count += 1
-            logger.info(
-                f"Step {self.step_count} of {max_steps} - Choice: {player_choice}"
-            )
             is_final_step = self.step_count >= max_steps
-            logger.info(
-                f"Is final step: {is_final_step} (step_count: {self.step_count}, max_steps: {max_steps})"
-            )
-
-            # CRITICAL: Set the flag in chat_client BEFORE making the request
             self.chat_client.is_final_step = is_final_step
 
-            # --- Build prompt ---
             if is_final_step:
                 final_prompt = f"""I choose option {player_choice}.
 
-THIS IS THE ABSOLUTE FINAL STEP OF OUR ADVENTURE (step {self.step_count} of {max_steps}). 
+FINAL STEP - Write exactly 8-9 lines to conclude the story.
 
-CRITICAL INSTRUCTIONS FOR YOUR FINAL RESPONSE:
-1. RESOLVE the story completely based on choice {player_choice}
-2. PROVIDE a satisfying conclusion with full closure
-3. WRAP UP all story threads and character arcs
-4. DO NOT include any numbered options or choices
-5. DO NOT leave the story open-ended
-6. WRITE a complete narrative ending (3 maximum)
-7. BEGIN your response with proper narrative, NOT with "You", "As", or other incomplete sentence starters
-8. END with a definitive statement that the adventure is complete
-9. MAKE SURE the response is a complete, well-formed story conclusion
-
-Write the final conclusion of our adventure now:"""
+Based on choice {player_choice}, provide a complete and satisfying ending that wraps up the adventure. NO numbered options. Keep it to approximately 8-9 lines total."""
             else:
-                final_prompt = f"I choose option {player_choice}. Describe the result and give me 4 new numbered options to continue the adventure."
+                final_prompt = f"I choose option {player_choice}. Describe the result vividly and give me exactly 4 new numbered options (1, 2, 3, 4)."
 
             self.gm_history.append({"role": "user", "content": final_prompt})
 
-            # --- Stream the GM response ---
             streamed_response = ""
-
-            if is_final_step:
-                # For final steps, we get the complete response at once
-                logger.info("Processing final step with complete response")
-                for chunk in self.chat_client.chat_streaming(self.gm_history):
-                    streamed_response += chunk
-                    # Update the conversation with the accumulated response
-                    temp_conversation = self.conversation + [("GM", streamed_response)]
-                    yield True, temp_conversation, player_choice, chunk
-            else:
-                # For regular steps, stream normally
-                for chunk in self.chat_client.chat_streaming(self.gm_history):
+            for chunk in self.chat_client.chat_streaming(self.gm_history):
+                if chunk:
                     streamed_response += chunk
                     temp_conversation = self.conversation + [("GM", streamed_response)]
                     yield True, temp_conversation, player_choice, chunk
 
-            # --- Post-processing ONLY for final step ---
-            if is_final_step:
-                import re
+            if not streamed_response.strip():
+                error_msg = "No response received from AI model"
+                self.chat_logger.append_system_message(f"Error: {error_msg}")
+                yield False, self.conversation, player_choice, error_msg
+                return
 
-                # Clean up the response
-                cleaned_response = streamed_response.strip()
+            if not self._is_response_complete(streamed_response) and is_final_step:
+                if not streamed_response.rstrip().endswith(('.', '!', '?')):
+                    streamed_response += "."
+                if len(streamed_response.split()) < 30:
+                    fallback = f" With choice {player_choice}, the adventure concludes. Peace settles and the journey ends with resolution."
+                    streamed_response += fallback
 
-                # Remove any numbered options that might have appeared
-                cleaned_response = re.sub(
-                    r"\n?\d+[\.\):][^\n]*", "", cleaned_response
-                ).strip()
-
-                # Check if response is too short or starts with problematic words
-                problematic_starts = [
-                    "you",
-                    "as",
-                    "the",
-                    "and",
-                    "but",
-                    "or",
-                    "while",
-                    "when",
-                    "if",
-                ]
-                is_problematic = (
-                    len(cleaned_response.split()) < 20  # Adjusted for 8-9 lines
-                    or any(
-                        cleaned_response.lower().startswith(word + " ")
-                        for word in problematic_starts
-                    )
-                    or not cleaned_response
-                )
-
-                # If the response is problematic, use a fallback
-                if is_problematic:
-                    logger.warning(
-                        f"Final response appears problematic (length: {len(cleaned_response.split())} words). Using fallback."
-                    )
-                    fallback_endings = [
-                        f"With choice {player_choice}, the adventure takes its final turn. The hero faces the ultimate "
-                        f"challenge with courage and determination. All the skills learned throughout the journey come "
-                        f"together in this decisive moment. The conflict reaches its resolution as allies rally to help. "
-                        f"Peace returns to the land as the threat is finally overcome. The hero is celebrated by all who "
-                        f"were saved. The quest is complete, and the legend begins. The adventure ends with triumph and "
-                        f"the promise of new tales to come.",
-                        f"Option {player_choice} leads to the climactic finale. The mysteries unraveled throughout the "
-                        f"journey finally make sense as the pieces fall into place. The hero's wisdom and bravery shine "
-                        f"through in this crucial hour. Friends and allies unite for the final push against darkness. "
-                        f"Victory comes at last, though not without sacrifice and growth. The world is forever changed "
-                        f"by the choices made along the way. Stories will be told of this great adventure. The tale "
-                        f"concludes, but its impact will echo through the ages.",
-                        f"The final choice of {player_choice} brings everything to its destined conclusion. All the "
-                        f"characters met along the way play their part in the grand finale. The hero's journey transforms "
-                        f"not just themselves, but everyone they encountered. The evil is vanquished through cleverness "
-                        f"and collaboration rather than force alone. The kingdom celebrates as peace is restored to all "
-                        f"the lands. New friendships forged in adventure will last a lifetime. The hero returns home "
-                        f"changed and wiser. The adventure ends, leaving behind a legacy of hope and courage.",
-                    ]
-                    cleaned_response = random.choice(fallback_endings)
-
-                # Ensure proper ending punctuation
-                if not cleaned_response.endswith((".", "!", "?")):
-                    cleaned_response += "."
-
-                streamed_response = cleaned_response
-                logger.info(
-                    f"Final response processed (length: {len(streamed_response.split())} words)"
-                )
-
-                # Update the conversation with the cleaned response
-                if self.conversation and self.conversation[-1][0] == "GM":
-                    self.conversation[-1] = ("GM", streamed_response)
-                else:
-                    self.conversation.append(("GM", streamed_response))
-
-            # --- Save final response ---
             self.gm_history.append({"role": "assistant", "content": streamed_response})
-
-            # Add to conversation if not already added (for non-final steps)
-            if not is_final_step:
-                self.conversation.append(("GM", streamed_response))
-
+            self.conversation.append(("GM", streamed_response))
             self.chat_logger.append_message("GM", streamed_response)
 
-            # Reset the flag after processing
             self.chat_client.is_final_step = False
 
-            # Always yield the final full response at end
+            if is_final_step:
+                self.chat_logger.append_system_message(f"Adventure completed after {self.step_count} steps")
+
             yield True, self.conversation, player_choice, streamed_response
 
         except Exception as e:
-            logger.error(f"Error in take_step_streaming: {e}")
+            error_msg = f"Error in take_step_streaming: {str(e)}"
+            self.chat_logger.append_system_message(f"Error in step {self.step_count}: {str(e)}")
+            self.chat_client.is_final_step = False
             yield False, self.conversation, None, f"{ErrorMessages.GAME_STEP}: {str(e)}"
 
     def reset(self):
         self.conversation.clear()
         self.step_count = 0
         self.gm_history = self.gm_history[:1]
-        self.chat_logger.start_new_session()
+        self.chat_logger.finalize_session()
+        self._start_session_with_model_info()
+
+    def finalize_game(self):
+        self.chat_logger.finalize_session()
 
     def get_game_info(self) -> Dict[str, Any]:
         return {
@@ -261,23 +229,27 @@ Write the final conclusion of our adventure now:"""
             "total_messages": len(self.conversation),
             "gm_history_length": len(self.gm_history),
             "last_message": self.conversation[-1] if self.conversation else None,
+            "session_log_file": str(self.chat_logger.session_file) if self.chat_logger.session_file else None,
             "chat_client_info": {
-                "api_url": getattr(self.chat_client, "api_url", "unknown"),
-                "model": getattr(self.chat_client, "model", "unknown"),
-                "provider": getattr(self.chat_client, "api_provider", "unknown"),
-            },
+                "api_url": getattr(self.chat_client, 'api_url', 'unknown'),
+                "model": getattr(self.chat_client, 'model', 'unknown'),
+                "provider": getattr(self.chat_client, 'api_provider', 'unknown'),
+                "is_final_step": getattr(self.chat_client, 'is_final_step', False)
+            }
         }
+
+    def __del__(self):
+        try:
+            if hasattr(self, 'chat_logger'):
+                self.chat_logger.finalize_session()
+        except:
+            pass
 
 
 class ConversationFormatter:
     @staticmethod
     def to_gradio_format(conversation: List[Tuple[str, str]]) -> List[Dict[str, str]]:
-        messages = []
-        for speaker, content in conversation:
-            messages.append(
-                {"role": "assistant" if speaker == "GM" else "user", "content": content}
-            )
-        return messages
+        return [{"role": "assistant" if speaker == "GM" else "user", "content": content} for speaker, content in conversation]
 
     @staticmethod
     def to_markdown(conversation: List[Tuple[str, str]]) -> str:

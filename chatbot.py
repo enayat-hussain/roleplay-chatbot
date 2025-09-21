@@ -245,10 +245,10 @@ class ChatClient:
         # ADJUST TOKEN LIMIT FOR FINAL STEPS (8-9 lines)
         if hasattr(self, "is_final_step") and self.is_final_step:
             if config.get("payload_style") == "anthropic":
-                payload["max_tokens"] = 250  # Allow for 8-9 lines (~150-200 words)
+                payload["max_tokens"] = 400  # Increased for better completion
                 payload["temperature"] = 0.5  # Balanced creativity
             else:
-                payload["max_tokens"] = 250  # Allow for 8-9 lines (~150-200 words)
+                payload["max_tokens"] = 400  # Increased for better completion
                 payload["temperature"] = 0.5  # Balanced creativity
         else:
             # Add AI settings based on provider style
@@ -290,25 +290,61 @@ class ChatClient:
 
         return headers
 
-    def chat_streaming(
-        self, messages: List[Dict[str, str]]
-    ) -> Generator[str, None, None]:
-        """Streaming chat with simplified approach for final steps"""
+    def chat_streaming(self, messages: List[Dict[str, str]]) -> Generator[str, None, None]:
+        """Streaming chat with robust final step handling and emergency logging"""
         try:
-            # For final steps or problematic cases, use non-streaming
+            # For final steps, use non-streaming to get complete response
             if self.is_final_step:
-                logger.info("Final step detected - using non-streaming approach")
+                logger.info("=== FINAL STEP CHAT_STREAMING START ===")
+                logger.info("Final step detected - using non-streaming approach for complete response")
+
                 result = self.chat(messages)
+                logger.info(f"Non-streaming chat() returned: {len(result) if result else 0} characters")
+
                 if result:
+                    logger.info(f"Result preview: {result[:150]}...")
+                    logger.info(f"Result ending: ...{result[-150:]}")
+
+                    # ✅ Append directly to the active chat log
+                    try:
+                        if hasattr(self, "chat_logger") and getattr(self, "chat_logger", None):
+                            self.chat_logger.append_message("GM", result)
+                            logger.info("Final GM response appended to chat log")
+                    except Exception as log_error:
+                        logger.warning(f"Could not append final response to chat log: {log_error}")
+
+                    # Yield the complete response
+                    logger.info("Yielding final response...")
                     yield result
+                    logger.info("Final response yielded successfully")
+
+                else:
+                    logger.error("Non-streaming returned empty result for final step")
+                    fallback = "The story concludes with a sense of resolution and completion."
+
+                    # ✅ Append fallback to the chat log as well
+                    try:
+                        if hasattr(self, "chat_logger") and getattr(self, "chat_logger", None):
+                            self.chat_logger.append_message("GM", fallback)
+                            logger.info("Fallback GM response appended to chat log")
+                    except Exception as log_error:
+                        logger.warning(f"Could not append fallback to chat log: {log_error}")
+
+                    yield fallback
+
+                logger.info("=== FINAL STEP CHAT_STREAMING END ===")
                 return
 
+            # Regular streaming for non-final steps
+            logger.info("=== REGULAR STREAMING START ===")
             payload = self._build_payload(messages, stream=True)
             headers = self._build_headers()
 
             logger.info(f"Making streaming request to: {self.api_url}")
             logger.info(f"Provider: {self._detected_provider}")
+            logger.info(f"Stream payload: {payload.get('stream', 'not set')}")
 
+            response = None
             try:
                 response = requests.post(
                     self.api_url,
@@ -317,32 +353,42 @@ class ChatClient:
                     stream=True,
                     timeout=self.timeout,
                 )
+                response.raise_for_status()
+                logger.info(f"Streaming request successful: HTTP {response.status_code}")
             except requests.exceptions.RequestException as e:
-                logger.error(f"Request exception: {e}")
-                # Fallback to non-streaming
+                logger.error(f"Streaming request exception: {e}")
+                logger.info("Falling back to non-streaming approach")
                 payload["stream"] = False
-                response = requests.post(
-                    self.api_url, json=payload, headers=headers, timeout=self.timeout
-                )
+                try:
+                    response = requests.post(
+                        self.api_url, json=payload, headers=headers, timeout=self.timeout
+                    )
+                    response.raise_for_status()
+                    logger.info(f"Fallback request successful: HTTP {response.status_code}")
+                except Exception as fallback_error:
+                    logger.error(f"Fallback request also failed: {fallback_error}")
+                    yield f"Error: Both streaming and non-streaming requests failed"
+                    return
 
-            # Handle HTTP errors
             if response.status_code != 200:
                 error_msg = f"HTTP {response.status_code}: {response.text[:200]}"
                 logger.error(error_msg)
                 yield error_msg
                 return
 
-            response.raise_for_status()
-
             full_content = ""
+            chunk_count = 0
+
             if payload.get("stream"):
-                # Handle streaming response with simplified parsing
+                logger.info("Processing streaming response...")
                 for content_chunk in self._parse_stream_response_simple(response):
                     if content_chunk:
+                        chunk_count += 1
                         full_content += content_chunk
+                        logger.debug(f"Chunk {chunk_count}: {len(content_chunk)} chars")
                         yield content_chunk
             else:
-                # Handle non-streaming response
+                logger.info("Processing non-streaming response...")
                 try:
                     result = response.json()
                     content = (
@@ -352,17 +398,27 @@ class ChatClient:
                     )
                     if content:
                         full_content = content
+                        logger.info(f"Non-streaming content: {len(content)} chars")
                         yield content
+                    else:
+                        logger.warning("No content found in non-streaming response")
                 except (json.JSONDecodeError, KeyError, IndexError) as e:
                     logger.error(f"Error parsing response: {e}")
                     yield f"Error parsing response: {e}"
 
-            # Fallback if response is empty
+            logger.info(f"Regular streaming complete. Total chunks: {chunk_count}, total chars: {len(full_content)}")
+
             if not full_content.strip():
-                yield "The GM seems silent... but the adventure continues!"
+                logger.warning("Empty response received, using fallback")
+                fallback_msg = "The GM seems silent... but the adventure continues!"
+                yield fallback_msg
+
+            logger.info("=== REGULAR STREAMING END ===")
 
         except Exception as e:
-            logger.error(f"Streaming error: {e}")
+            logger.error(f"Critical streaming error: {e}")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Error args: {e.args}")
             yield f"Request failed: {str(e)}"
 
     def _parse_stream_response_simple(self, response: requests.Response):
@@ -429,12 +485,16 @@ class ChatClient:
         return ""
 
     def chat(self, messages: List[Dict[str, str]]) -> str:
-        """Non-streaming chat completion with better error handling"""
+        """Non-streaming chat completion with enhanced final step handling"""
         try:
             payload = self._build_payload(messages, stream=False)
             headers = self._build_headers()
 
             logger.info(f"Making non-streaming request to: {self.api_url}")
+            if self.is_final_step:
+                logger.info("This is a final step non-streaming request")
+                logger.info(f"Payload max_tokens: {payload.get('max_tokens', 'not set')}")
+                logger.info(f"Payload temperature: {payload.get('temperature', 'not set')}")
 
             response = requests.post(
                 self.api_url, json=payload, headers=headers, timeout=self.timeout
@@ -445,6 +505,7 @@ class ChatClient:
                 return f"Error: HTTP {response.status_code}"
 
             result = response.json()
+            logger.info(f"Received response JSON keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
 
             # Try multiple paths to extract content
             content_paths = [
@@ -472,6 +533,7 @@ class ChatClient:
                             break
 
                     if value and isinstance(value, str):
+                        logger.info(f"Successfully extracted content using path {path}: {len(value)} chars")
                         return value.strip()
                 except (KeyError, IndexError, TypeError):
                     continue
