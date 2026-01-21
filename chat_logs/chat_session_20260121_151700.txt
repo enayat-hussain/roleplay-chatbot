@@ -1,0 +1,31 @@
+=== New Chat Session: 20260121_151700 ===
+=== Model Configuration ===
+Provider: gemini
+Model: gemini-3-flash-preview
+API URL: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+Temperature: 0.7
+Max Tokens: 1000
+==============================
+
+[GM] You emerge from a wooden telephone booth onto the Ringstraße, greeted by the smell of coal smoke and the sight of the University of Vienna’s neo-Renaissance facade. Students in suits and
+[Player] 4
+[GM] You approach a group of students huddled near the university ramp, their eyes fixed on a headline in the *Reichspost* about the ongoing tensions with Nazi Germany. One student, wearing a small Fatherland Front pin, turns to you and says, "The Schuschnigg government is the only thing keeping the chaos at bay, though the Pan-Germans would say otherwise." The air is tense, and a police officer in a green uniform watches the group closely from across the street. You feel the weight of your 21st-century knowledge as you realize how precarious the Austrian corporate state truly is.
+
+1. Ask the students for directions to the Philosophy Department.
+2. Inquire about the rumors regarding Professor Moritz Schlick's controversial views.
+3. Purchase a newspaper to see the official state narrative of today's events.
+4. Walk
+[Player] 2
+[GM] The student with the Fatherland Front pin scowls, leaning in to whisper so the passing officer does not overhear. "Schlick and his 'Vienna Circle' are a cancer on our Catholic heritage, preaching that metaphysics and religion are mere nonsense," he says with a hint of venom. A quieter student adds that the Professor's secularism is frequently denounced as 'Jewish-Bolshevik' by the radical German nationalists who haunt the hallways. The university has become a microcosm of the political instability gripping Austria, where even logic is treated as a subversive act. They point toward the main entrance, noting that Schlick is likely preparing for his upcoming lectures in the Philosophy Department.
+
+1. Enter the university building to find Professor Schlick’s office or lecture hall.
+2. Head to a nearby café to see if intellectuals are discussing the "Vienna Circle" in a more private setting.
+3. Visit the university library to look for recent pamphlets or articles attacking Schlick’s work.
+4. Approach the police officer to gauge the state's official stance on the university's "radical" professors.
+[Player] 2
+[GM] You enter a crowded café near the university, where the air is thick with tobacco smoke and the clinking of coffee cups. At a marble table, an older man leans toward his companion and mutters, "The attacks in the *Deutsch-Österreichische Tageszeitung* against Schlick are becoming more vicious; they claim his logic is a 'Jewish weapon' against the soul of the people." His companion nods grimly, noting that the university administration seems increasingly unwilling to protect its liberal professors from radicalized students. In the corner, a group of young men in boots glare at the intellectuals, their presence a reminder of the illegal but active Nazi underground. The atmosphere is a volatile mix of intellectual rigor and the looming threat of political violence.
+
+1. Approach the intellectuals and ask about the specific identity of those leading the campaign against Schlick.
+2.
+[Player] 1
+[SYSTEM] === Game Session Ended ===

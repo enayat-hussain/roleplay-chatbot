@@ -1,0 +1,40 @@
+=== New Chat Session: 20260121_151322 ===
+=== Model Configuration ===
+Provider: gemini
+Model: gemini-3-flash-preview
+API URL: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+Temperature: 0.7
+Max Tokens: 1000
+==============================
+
+[GM] You step out of a cramped wooden telephone booth onto the Ringstraße, directly across from the monumental main building of the University of Vienna. The air is thick with the smell of coal smoke and horse manure, though Steyr automobiles are becoming increasingly common on the pavement. Men in felt hats and women in modest dresses hurry past, many wearing the "Kruckenkreuz" pin of the Fatherland Front, the only legal political organization under Chancellor Schuschnigg’s authoritarian regime. The political atmosphere is heavy, as the city remains a tinderbox of suppressed socialist sentiment and rising, illegal National Socialist agitation. Behind you, the Votivkirche's spires loom over a city caught between its imperial past and a fractured, radicalized present.
+
+What do you do?
+
+1. Enter the University of Vienna main building to look for the Philosophy Department.
+2. Buy a newspaper from a nearby kiosk to check the latest political news.
+3. Walk to a nearby coffee house to observe the locals and listen for gossip.
+4. Approach a student standing near the entrance and ask about Professor Moritz Schlick.
+[Player] 4
+[GM] You approach a young man in a charcoal suit leaning against a stone pillar near the university's grand ramp. He looks up from a textbook, his expression guarded as he adjusts his spectacles and glances at a passing group of students wearing "Heimwehr" armbands. "Professor Schlick?" he whispers, closing his book. "He is a brilliant mind, but his 'Vienna Circle' is under constant fire from the clerical-fascists and the illegal Nazis who claim his logical positivism is 'Jewish-Bolshevik' subversion." He warns you that the university has become a battlefield for such ideologies, and Schlick is a frequent target of vitriol in the press.
+
+What do you do?
+
+1. Ask the student if he knows where Schlick's next lecture will be held.
+2. Ask what the "illegal Nazis" have been saying specifically about the Professor.
+3. Inquire about a former student of Schlick's named Johann Nelböck.
+4. Thank him and head toward the university's philosophy library to see the atmosphere for yourself.
+[Player] 1
+[GM] The student checks his pocket watch and points toward the grand staircase inside the university's vestibule. "The Professor usually lectures in *Hörsaal 41* on the second
+[Player] 3
+[GM] The student’s face pales slightly at the mention of the name, and he looks around nervously to ensure no university beadles are listening. "Nelböck is a troubled soul, a failed academic who blames the Professor for his own professional stagnation and personal grievances," he says in a low, urgent voice. He explains that Nelböck has been seen loitering near the philosophy wing, fueled by the toxic rhetoric of the anti-Semitic press that paints Schlick as a corrupting influence. The political tension in the air is palpable, as the state-controlled media often ignores the threats made against liberal intellectuals while focusing on the "Austrofascist" struggle against both Nazis and Socialists.
+
+What do you do?
+
+1. Ask where Nelböck was last seen loitering.
+2. Ask the student if the university administration has done anything to protect Schlick from these threats.
+3. Head directly to the philosophy wing to see if you can spot Nelböck yourself.
+4. Go to a nearby police station to see if there are public records on Nelböck's previous psychiatric commitments.
+[Player] 2
+[GM] The student scoffs bitterly, glancing toward the Rector’s office with
+[SYSTEM] === Game Session Ended ===

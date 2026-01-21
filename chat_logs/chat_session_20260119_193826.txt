@@ -1,0 +1,10 @@
+=== New Chat Session: 20260119_193826 ===
+=== Model Configuration ===
+Provider: anthropic
+Model: claude-3-haiku-20240307
+API URL: https://api.anthropic.com/v1/messages
+Temperature: 0.7
+Max Tokens: 1000
+==============================
+
+[GM] Error: Both streaming and non-streaming requests failed

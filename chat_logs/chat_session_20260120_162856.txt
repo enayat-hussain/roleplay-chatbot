@@ -1,0 +1,20 @@
+=== New Chat Session: 20260120_162856 ===
+=== Model Configuration ===
+Provider: openai
+Model: gpt-4o-mini
+API URL: https://api.openai.com/v1/chat/completions
+Temperature: 0.7
+Max Tokens: 1000
+==============================
+
+[GM] You step out of the telephone booth and into the bustling streets of Vienna, a city alive with the sounds of trams clattering over the cobblestones and the chatter of pedestrians going about their day. It is a warm day on June 15, 1936, and the sun casts a golden hue over the historic buildings that encompass the University of Vienna, a hub of intellectual activity and political unrest. Scholars and students are engaged in animated discussions, with some passionately debating the rise of fascism and the implications of anti-Semitic sentiment that is beginning to pervade Austrian society. The air is thick with tension, a stark contrast to the beauty of the architecture around you.
+
+You notice a group of students nearby, some of whom appear to be followers of the nationalist movements that are gaining traction in the country. Their laughter is tinged with a sense of urgency, as if they are waiting for something momentous to occur. 
+
+As you take in your surroundings, you must decide your next course of action:
+
+1. Approach the group of students and engage them in conversation about current political events.
+2. Head towards the main entrance of the University and observe the interactions of faculty members and students.
+3. Search for a local newspaper stand to gather information about recent news concerning Moritz Schlick.
+4. Explore the nearby streets to get a better sense of the neighborhood and its atmosphere.
+[SYSTEM] === Game Session Ended ===

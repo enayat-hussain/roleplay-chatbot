@@ -1,0 +1,27 @@
+=== New Chat Session: 20260121_150301 ===
+=== Model Configuration ===
+Provider: gemini
+Model: gemini-3-flash-preview
+API URL: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+Temperature: 0.7
+Max Tokens: 1000
+==============================
+
+[GM] The air inside the wooden telephone booth is stale, smelling of old paper and tobacco. Stepping onto the Ringstraße, the monumental neo-Renaissance facade of the University of Vienna dominates the view under a clear June sun. Pedestrians in formal attire move briskly, while a passing tram clatters along the tracks toward Schottentor. On a nearby corner, a newsstand displays headlines about Chancellor Schuschnigg’s recent diplomatic efforts to maintain Austrian independence despite increasing pressure from National Socialist circles. You stand at the threshold of the university, your mission to uncover the truth behind a future tragedy beginning here.
+
+1. Approach the newsstand to buy a paper and check the current political climate.
+2. Enter the University of Vienna main building to find the philosophy department.
+3. Find a nearby cafe to listen to local gossip about the university's faculty.
+4. Walk toward the Rathaus to observe the presence of the Fatherland Front's militia.
+[Player] 4
+[GM] The Gothic spires of the Rathaus loom over the manicured gardens, where guards of the *Frontmiliz* patrol with rifles slung over their shoulders. Red-white-red banners featuring
+[Player] 3
+[GM] You enter a nearby coffee house, where the clatter of porcelain and the scent of roasted beans fill the air. Men in suits sit behind newspapers on wooden frames, discussing the influence of the Roman Catholic Church on education and the government's struggle against both the Left and the illegal Nazis. At a corner table, a young man with a student cap leans toward his companion, whispering intensely about the "subversive" influence of the Vienna Circle in the philosophy department. He mentions Professor Moritz Schlick by name, claiming his logical positivism is eroding the moral fabric of Christian Austria. The waiter approaches you, his expression polite but wary of a stranger listening in on private conversations.
+
+1. Order a coffee and ask the waiter about the general mood at the university.
+2. Approach the whispering student to ask what he specifically has against Professor Schlick.
+3. Pick up a copy of the *Reichspost* to read the official government stance on university faculty.
+4. Leave the cafe and head back to the university to find Schlick's office directly.
+[Player] 2
+[GM] You approach the student, who glares at you with eyes full of ideological fervor
+[SYSTEM] === Game Session Ended ===
