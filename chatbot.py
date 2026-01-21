@@ -194,6 +194,41 @@ class ChatClient:
                     "payload_style": "openai",
                 },
             },
+            "gemini": {
+                "url_patterns": ["generativelanguage.googleapis.com", "gemini"],
+                "explicit_names": ["gemini", "google"],
+                "model_indicators": ["gemini-3", "gemini-2", "gemini-1.5", "gemini-pro", "gemini-flash"],
+                "config": {
+                    "auth_header": "Authorization",
+                    "auth_format": "Bearer {}",
+                    "message_field": "messages",
+                    "model_field": "model",
+                    "stream_field": "stream",
+                    "content_paths": [
+                        ["choices", 0, "delta", "content"],
+                        ["choices", 0, "message", "content"],
+                    ],
+                    "payload_style": "openai",
+                    "requires_max_tokens": True,
+                },
+            },
+            "deepseek": {
+                "url_patterns": ["api.deepseek.com", "deepseek"],
+                "explicit_names": ["deepseek"],
+                "model_indicators": ["deepseek-chat", "deepseek-coder", "deepseek-reasoner"],
+                "config": {
+                    "auth_header": "Authorization",
+                    "auth_format": "Bearer {}",
+                    "message_field": "messages",
+                    "model_field": "model",
+                    "stream_field": "stream",
+                    "content_paths": [
+                        ["choices", 0, "delta", "content"],
+                        ["choices", 0, "message", "content"],
+                    ],
+                    "payload_style": "openai",
+                },
+            },
         }
 
         # PRIORITY 1: URL pattern matching (most reliable)
@@ -256,6 +291,12 @@ class ChatClient:
             payload.update(
                 {k: v for k, v in self.ai_settings.items() if v is not None}
             )
+
+        # Gemini requires max_tokens to be set explicitly for complete responses
+        # Preview models especially need this to avoid truncation
+        if config.get("requires_max_tokens") or self._detected_provider == "gemini":
+            if "max_tokens" not in payload or payload.get("max_tokens") is None:
+                payload["max_tokens"] = 1024  # Ensure complete responses for Gemini
 
         return payload
 

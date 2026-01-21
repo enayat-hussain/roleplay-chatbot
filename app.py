@@ -79,6 +79,8 @@ class RPGApp:
         return [
             "OpenAI (GPT)",
             "Anthropic (Claude)",
+            "Google (Gemini)",
+            "DeepSeek",
             "Ollama (Local)",
             "Groq",
             "LM Studio",
@@ -106,6 +108,28 @@ class RPGApp:
                 ],
                 "requires_key": True,
                 "provider": "anthropic",
+            },
+            "Google (Gemini)": {
+                "api_url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+                "default_model": "gemini-2.0-flash",
+                "models": [
+                    "gemini-2.5-flash-lite",
+                    "gemini-2.0-flash",
+                    "gemini-2.0-flash-lite",
+                ],
+                "requires_key": True,
+                "provider": "gemini",
+            },
+            "DeepSeek": {
+                "api_url": "https://api.deepseek.com/chat/completions",
+                "default_model": "deepseek-chat",
+                "models": [
+                    "deepseek-chat",
+                    "deepseek-coder",
+                    "deepseek-reasoner",
+                ],
+                "requires_key": True,
+                "provider": "deepseek",
             },
             "Ollama (Local)": {
                 "api_url": "http://localhost:11434/v1/chat/completions",

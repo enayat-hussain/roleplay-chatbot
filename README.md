@@ -21,6 +21,8 @@ A real-time streaming RPG chatbot with **multi-provider support** that creates i
 ### Supported AI Providers
 * **OpenAI** (GPT-4, GPT-4o, GPT-3.5-turbo)
 * **Anthropic** (Claude-3.5 Sonnet, Claude-3 Haiku, Claude-3 Opus)
+* **Google** (Gemini 2.5 Flash-Lite, Gemini 2.0 Flash)
+* **DeepSeek** (DeepSeek Chat, DeepSeek Coder, DeepSeek Reasoner)
 * **Ollama** (Local: Llama 3.1, Mistral, CodeLlama, Vicuna, Gemma)
 * **Groq** (Fast inference: Llama, Mixtral, Gemma models)
 * **LM Studio** (Local model server)
@@ -47,7 +49,7 @@ ollama serve
 ```
 
 **For Cloud AI:**
-- Get API keys from OpenAI, Anthropic, or Groq
+- Get API keys from OpenAI, Anthropic, Google, DeepSeek, or Groq
 - No local setup required
 
 ### Installation
@@ -154,6 +156,8 @@ The application comes with pre-configured settings for each provider:
 |----------|-------------|---------------|------------------|
 | **OpenAI (GPT)** | `https://api.openai.com/v1/chat/completions` | `gpt-4o-mini` | Yes |
 | **Anthropic (Claude)** | `https://api.anthropic.com/v1/messages` | `claude-3-haiku-20240307` | Yes |
+| **Google (Gemini)** | `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` | `gemini-2.0-flash` | Yes |
+| **DeepSeek** | `https://api.deepseek.com/chat/completions` | `deepseek-chat` | Yes |
 | **Ollama (Local)** | `http://localhost:11434/v1/chat/completions` | `llama3.1` | No |
 | **Groq** | `https://api.groq.com/openai/v1/chat/completions` | `llama-3.1-8b-instant` | Yes |
 | **LM Studio** | `http://localhost:1234/v1/chat/completions` | `local-model` | No |
@@ -172,6 +176,16 @@ The application comes with pre-configured settings for each provider:
 - `claude-3-5-sonnet-20241022` (latest, most capable)
 - `claude-3-haiku-20240307` (fast, cost-effective)
 - `claude-3-opus-20240229` (most powerful, expensive)
+
+**Google Gemini Models:**
+- `gemini-2.5-flash-lite` (fast, low-cost, high-performance)
+- `gemini-2.0-flash` (recommended, balanced)
+- `gemini-2.0-flash-lite` (ultra-efficient, high-frequency tasks)
+
+**DeepSeek Models:**
+- `deepseek-chat` (general purpose, recommended)
+- `deepseek-coder` (optimized for coding tasks)
+- `deepseek-reasoner` (enhanced reasoning capabilities)
 
 **Groq Models:**
 - `llama-3.1-8b-instant` (recommended, very fast)
@@ -305,10 +319,12 @@ If you encounter issues:
 
 **OpenAI**: Check API billing and rate limits
 **Anthropic**: Verify API key and model access
+**Google Gemini**: Get API key from Google AI Studio (https://aistudio.google.com)
+**DeepSeek**: Get API key from DeepSeek platform (https://platform.deepseek.com)
 **Ollama**: Ensure `ollama serve` is running
 **Groq**: Check free tier limits
 **Local Models**: Verify server status and model loading
 
 ---
 
-*Built with Gradio and configurable AI APIs - Supporting 8+ providers!*
+*Built with Gradio and configurable AI APIs - Supporting 10+ providers!*
