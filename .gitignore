@@ -16,6 +16,7 @@ venv/
 
 # Logs
 *.log
+chat_logs/
 
 # OS files
 .DS_Store
