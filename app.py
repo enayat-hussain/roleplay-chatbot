@@ -376,197 +376,466 @@ class RPGApp:
             yield [], None, False, f"**Status:** Auto-play error: {str(e)}"
 
     def create_interface(self) -> gr.Blocks:
-        """Create an improved, user-friendly Gradio interface"""
+        """Create a professional, clean UI like ChatGPT/Claude"""
+
+        # Professional minimal CSS - Clean dark sidebar
+        custom_css = """
+        /* Base container */
+        .gradio-container {
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: #f8fafc !important;
+            height: 100vh !important;
+        }
+
+        /* ========== SIDEBAR ========== */
+        .sidebar {
+            background: #1e1e2e !important;
+            padding: 16px !important;
+        }
+
+        /* All text in sidebar white */
+        .sidebar, .sidebar * {
+            color: #cdd6f4 !important;
+        }
+
+        /* Section labels */
+        .settings-label {
+            font-size: 10px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1px !important;
+            color: #6c7086 !important;
+            margin: 12px 0 6px 0 !important;
+        }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: #313244;
+            margin: 12px 0;
+        }
+        
+        /* New Game button */
+        .new-chat-btn {
+            background: #cba6f7 !important;
+            color: #1e1e2e !important;
+            border: none !important;
+            padding: 10px !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+        }
+        .new-chat-btn:hover {
+            background: #b4befe !important;
+        }
+
+        /* Slider labels - muted color, no box */
+        .sidebar label,
+        .sidebar label span,
+        .sidebar .label-wrap,
+        .sidebar .label-wrap span,
+        .sidebar [class*="label"],
+        .sidebar .head,
+        .sidebar .head * {
+            color: #6c7086 !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Target all possible slider wrapper elements */
+        .sidebar [data-testid="slider"] > div,
+        .sidebar [data-testid="slider"] .head,
+        .sidebar [data-testid="slider"] span {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        /* All inputs dark background */
+        .sidebar input[type="text"],
+        .sidebar input[type="password"],
+        .sidebar textarea {
+            background: #313244 !important;
+            border: 1px solid #45475a !important;
+            color: #cdd6f4 !important;
+        }
+        .sidebar input::placeholder {
+            color: #6c7086 !important;
+        }
+
+        /* All .wrap elements dark by default */
+        .sidebar .wrap {
+            background: #313244 !important;
+            border: 1px solid #45475a !important;
+        }
+
+        /* But sliders should be transparent - override with higher specificity */
+        .sidebar .form .wrap {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Remove box around slider form */
+        .sidebar .block,
+        .sidebar .form {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        /* ========== MAIN CHAT AREA ========== */
+        .main-chat {
+            background: #ffffff !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+            padding: 0 24px !important;
+        }
+
+        /* Chat container */
+        .chat-container {
+            flex: 1 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        /* Chatbot styling */
+        .chatbot-box {
+            border: none !important;
+            background: #f8fafc !important;
+            box-shadow: none !important;
+            flex: 1 !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+        }
+        .chatbot-box > div {
+            height: 100% !important;
+            padding: 24px !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+        }
+
+        /* Chat messages */
+        .chatbot-box .message-wrap {
+            gap: 20px !important;
+        }
+
+        .chatbot-box .message {
+            padding: 14px 18px !important;
+            border-radius: 16px !important;
+            max-width: 70% !important;
+            border: none !important;
+            line-height: 1.6 !important;
+            font-size: 14px !important;
+            margin-bottom: 8px !important;
+        }
+
+        /* Copy button - position below message */
+        .chatbot-box button[title="Copy"] {
+            margin-top: 8px !important;
+            opacity: 0.6 !important;
+        }
+        .chatbot-box button[title="Copy"]:hover {
+            opacity: 1 !important;
+        }
+
+        /* Bot messages - LEFT side */
+        .chatbot-box .bot {
+            background: #f1f5f9 !important;
+            color: #1e293b !important;
+            align-self: flex-start !important;
+            margin-right: auto !important;
+            margin-left: 0 !important;
+            border-bottom-left-radius: 4px !important;
+        }
+
+        /* User messages - RIGHT side, fixed position */
+        .chatbot-box .user {
+            background: #3b82f6 !important;
+            color: #ffffff !important;
+            align-self: flex-end !important;
+            margin-left: auto !important;
+            margin-right: 0 !important;
+            border-bottom-right-radius: 4px !important;
+            max-width: fit-content !important;
+            min-width: 40px !important;
+            text-align: center !important;
+            padding: 8px 16px !important;
+            position: relative !important;
+            right: 0 !important;
+        }
+
+        /* Status bar */
+        .status-bar {
+            background: #f1f5f9 !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px !important;
+            padding: 12px 16px !important;
+            font-size: 13px !important;
+            color: #64748b !important;
+            margin: 16px 0 !important;
+            flex-shrink: 0 !important;
+        }
+
+        /* Button row */
+        .button-row {
+            padding: 16px 0 24px 0 !important;
+            background: #ffffff !important;
+            border-top: 1px solid #e2e8f0 !important;
+            flex-shrink: 0 !important;
+        }
+
+        /* Action buttons */
+        .action-btn {
+            background: #3b82f6 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 6px !important;
+            padding: 8px 18px !important;
+            font-weight: 500 !important;
+            font-size: 13px !important;
+            transition: background 0.15s ease !important;
+        }
+        .action-btn:hover {
+            background: #2563eb !important;
+        }
+
+        .secondary-action {
+            background: #f8fafc !important;
+            color: #334155 !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 6px !important;
+            padding: 8px 18px !important;
+            font-weight: 500 !important;
+            font-size: 13px !important;
+        }
+        .secondary-action:hover {
+            background: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        /* Header */
+        .app-header {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 18px 24px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0 !important;
+        }
+        .app-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+        .model-badge {
+            background: #f1f5f9;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        /* Hide gradio footer */
+        footer {
+            display: none !important;
+        }
+
+        /* Accordion styling */
+        .gr-accordion {
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px !important;
+            margin: 16px 24px !important;
+        }
+        """
 
         with gr.Blocks(
-            title=Config.UI_CONFIG["title"],
-            theme=getattr(gr.themes, Config.UI_CONFIG["theme"].title())(),
+            title="RPG Adventure",
+            theme=gr.themes.Base(),
+            css=custom_css,
         ) as demo:
-            # --- State ---
+            # State
             game_state = gr.State(None)
             is_processing = gr.State(False)
 
-            # --- Header ---
-            with gr.Row():
-                with gr.Column():
-                    gr.Markdown(f"# {Config.UI_CONFIG['title']}")
-                    gr.Markdown(Config.UI_CONFIG["description"])
+            with gr.Row(equal_height=True):
+                # Left Sidebar (dark)
+                with gr.Column(scale=1, min_width=260, elem_classes="sidebar"):
+                    # New Game button
+                    reset_btn = gr.Button(
+                        "+ New Game",
+                        elem_classes="new-chat-btn",
+                    )
 
-            # --- Main Tabs ---
-            with gr.Tab("Game"):
-                with gr.Row():
-                    # --- Left Column: Controls ---
-                    with gr.Column(scale=1, min_width=280):
-                        gr.Markdown("### AI Provider Selection")
+                    gr.HTML('<div class="divider"></div>')
 
-                        # Provider selection dropdown
-                        available_providers = self.get_available_providers()
-                        provider_dropdown = gr.Dropdown(
-                            choices=available_providers,
-                            value="OpenAI (GPT)",
-                            label="Select AI Provider",
-                            info="Choose your AI service provider",
-                        )
+                    # Provider settings
+                    gr.HTML('<p class="settings-label">AI Provider</p>')
+                    available_providers = self.get_available_providers()
+                    provider_dropdown = gr.Dropdown(
+                        choices=available_providers,
+                        value="Groq",
+                        show_label=False,
+                        container=False,
+                    )
 
-                        # Model selection for the chosen provider
-                        initial_config = self.get_provider_config("OpenAI (GPT)")
-                        model_dropdown = gr.Dropdown(
-                            label="Select Model",
-                            info="Available models for the selected provider",
-                            choices=initial_config["models"],
-                            value=initial_config["default_model"],
-                            allow_custom_value=True,
-                        )
+                    initial_config = self.get_provider_config("Groq")
+                    model_dropdown = gr.Dropdown(
+                        choices=initial_config["models"],
+                        value=initial_config["default_model"],
+                        show_label=False,
+                        container=False,
+                        allow_custom_value=True,
+                    )
 
-                        # Custom settings (shown when needed)
-                        with gr.Group(visible=False) as custom_settings:
-                            custom_api_url = gr.Textbox(
-                                label="Custom API URL",
-                                placeholder="Enter API endpoint URL...",
-                                info="Override default API endpoint",
-                            )
-                            custom_api_key = gr.Textbox(
-                                label="API Key",
-                                placeholder="Enter your API key...",
-                                type="password",
-                                info="Required for some providers",
-                            )
-                        max_steps_slider = gr.Slider(
-                            1,
-                            Config.MAX_STEPS_LIMIT,
-                            value=Config.DEFAULT_MAX_STEPS,
-                            step=1,
-                            label="Max Steps",
-                        )
-                        delay_slider = gr.Slider(
-                            0,
-                            Config.MAX_DELAY,
-                            value=Config.DEFAULT_DELAY,
-                            step=1,
-                            label="Delay Between Steps (Auto-play)",
-                        )
+                    # API Key input
+                    custom_api_key = gr.Textbox(
+                        show_label=False,
+                        placeholder="API Key",
+                        type="password",
+                        container=False,
+                        elem_classes="api-input",
+                    )
+                    custom_api_url = gr.Textbox(
+                        show_label=False,
+                        placeholder="Custom API URL (optional)",
+                        container=False,
+                        visible=False,
+                    )
 
-                        with gr.Row():
-                            start_btn = gr.Button("Start", variant="primary")
-                            next_btn = gr.Button("Next", variant="secondary")
-                        with gr.Row():
-                            auto_btn = gr.Button("Auto-play", variant="secondary")
-                            reset_btn = gr.Button("Reset", variant="stop")
+                    gr.HTML('<div class="divider"></div>')
 
-                    # --- Right Column: Chat & Logs ---
-                    with gr.Column(scale=3):
-                        gr.Markdown("### Adventure Log")
+                    # Game settings
+                    gr.HTML('<p class="settings-label">Game Settings</p>')
+                    max_steps_slider = gr.Slider(
+                        1,
+                        Config.MAX_STEPS_LIMIT,
+                        value=Config.DEFAULT_MAX_STEPS,
+                        step=1,
+                        label="Steps",
+                        info="",
+                    )
+                    delay_slider = gr.Slider(
+                        0,
+                        Config.MAX_DELAY,
+                        value=Config.DEFAULT_DELAY,
+                        step=1,
+                        label="Auto-play delay",
+                        info="",
+                    )
+
+                # Main Chat Area
+                with gr.Column(scale=4, elem_classes="main-chat"):
+                    # Header
+                    gr.HTML('''
+                        <div class="app-header">
+                            <h1 class="app-title">RPG Adventure</h1>
+                            <span class="model-badge" id="model-display">Select a provider to start</span>
+                        </div>
+                    ''')
+
+                    # Chat area - fills entire space
+                    with gr.Column(elem_classes="chat-container"):
                         chatbot = gr.Chatbot(
-                            type="messages",
-                            label="Live Adventure Stream",
-                            height=Config.UI_CONFIG["chatbot_height"],
+                            label="",
+                            height=550,
                             show_copy_button=True,
                             render_markdown=True,
-                            layout="bubble",
-                        )
-                        status_box = gr.Markdown(
-                            f"Ready: {StatusMessages.READY}", elem_classes="status-box"
+                            elem_classes="chatbot-box",
+                            container=False,
                         )
 
-            # --- Info & Export ---
-            with gr.Tab("Info & Export"):
-                with gr.Row():
-                    info_btn = gr.Button("Show Game Info")
-                    export_md_btn = gr.Button("Export Markdown")
-                    export_txt_btn = gr.Button("Export Text")
+                    # Status bar
+                    status_box = gr.Markdown(
+                        "Ready to start your adventure. Configure your AI provider and click **Start**.",
+                        elem_classes="status-bar"
+                    )
 
-                game_info_display = gr.JSON(label="Current Game Information")
-                export_output = gr.Textbox(
-                    label="Export Output", lines=10, max_lines=20, show_copy_button=True
-                )
+                    # Action buttons at bottom
+                    with gr.Row(elem_classes="button-row"):
+                        start_btn = gr.Button(
+                            "Start Adventure",
+                            elem_classes="action-btn",
+                        )
+                        next_btn = gr.Button(
+                            "Next Step",
+                            elem_classes="secondary-action",
+                        )
+                        auto_btn = gr.Button(
+                            "Auto-play",
+                            elem_classes="secondary-action",
+                        )
 
-            # --- System Status ---
-            with gr.Tab("System"):
-                connection_btn = gr.Button("Test API Connection")
-                connection_status = gr.JSON(label="Connection Status")
-
-                gr.Markdown("### Provider Testing")
+            # Hidden components for other tabs functionality
+            with gr.Accordion("Advanced Options", open=False):
                 with gr.Row():
                     with gr.Column():
-                        test_provider_dropdown = gr.Dropdown(
-                            choices=available_providers,
-                            value="OpenAI (GPT)",
-                            label="Test Provider",
-                        )
-                        test_model_dropdown = gr.Dropdown(
-                            label="Test Model",
-                            choices=initial_config["models"],
-                            value=initial_config["default_model"],
-                        )
-                        test_provider_btn = gr.Button("Test Selected Provider")
-                        test_results = gr.JSON(label="Provider Test Results")
+                        gr.Markdown("### Export")
+                        with gr.Row():
+                            export_md_btn = gr.Button("Export Markdown")
+                            export_txt_btn = gr.Button("Export Text")
+                        export_output = gr.Textbox(label="Export", lines=8, show_copy_button=True)
 
-            # --- Event Handlers ---
+                    with gr.Column():
+                        gr.Markdown("### Debug")
+                        info_btn = gr.Button("Show Game Info")
+                        game_info_display = gr.JSON(label="Game State")
+                        connection_btn = gr.Button("Test Connection")
+                        connection_status = gr.JSON(label="Connection")
 
-            # Update model dropdown and custom settings based on provider selection
+            # Hidden test components
+            test_provider_dropdown = gr.Dropdown(visible=False)
+            test_model_dropdown = gr.Dropdown(visible=False)
+            test_results = gr.JSON(visible=False)
+
+            # Event Handlers
             def update_provider_settings(selected_provider):
                 provider_config = self.get_provider_config(selected_provider)
                 models = provider_config["models"]
                 default_model = provider_config["default_model"]
-
-                # Show custom settings for Custom Provider or providers that need API keys
                 show_custom = (
                     selected_provider == "Custom Provider"
                     or provider_config["requires_key"]
                 )
-
                 return (
-                    gr.update(choices=models, value=default_model),  # model_dropdown
-                    gr.update(visible=show_custom),  # custom_settings
-                    gr.update(value=provider_config["api_url"]),  # custom_api_url
-                    gr.update(value=""),  # reset custom_api_key
+                    gr.update(choices=models, value=default_model),
+                    gr.update(visible=show_custom),
+                    gr.update(value=provider_config["api_url"]),
                 )
 
             provider_dropdown.change(
                 update_provider_settings,
                 [provider_dropdown],
-                [model_dropdown, custom_settings, custom_api_url, custom_api_key],
+                [model_dropdown, custom_api_key, custom_api_url],
             )
 
-            # Streaming event handlers
             start_btn.click(
                 self.start_game_streaming,
-                [
-                    max_steps_slider,
-                    provider_dropdown,
-                    model_dropdown,
-                    custom_api_url,
-                    custom_api_key,
-                ],
+                [max_steps_slider, provider_dropdown, model_dropdown, custom_api_url, custom_api_key],
                 [chatbot, game_state, is_processing, status_box],
                 show_progress="hidden",
             )
 
             next_btn.click(
                 self.next_step_streaming,
-                [
-                    game_state,
-                    max_steps_slider,
-                    is_processing,
-                    provider_dropdown,
-                    model_dropdown,
-                    custom_api_url,
-                    custom_api_key,
-                ],
+                [game_state, max_steps_slider, is_processing, provider_dropdown, model_dropdown, custom_api_url, custom_api_key],
                 [chatbot, game_state, is_processing, status_box],
                 show_progress="hidden",
             )
 
             auto_btn.click(
                 self.auto_play_streaming,
-                [
-                    max_steps_slider,
-                    delay_slider,
-                    provider_dropdown,
-                    model_dropdown,
-                    custom_api_url,
-                    custom_api_key,
-                ],
+                [max_steps_slider, delay_slider, provider_dropdown, model_dropdown, custom_api_url, custom_api_key],
                 [chatbot, game_state, is_processing, status_box],
                 show_progress="minimal",
             )
@@ -575,109 +844,28 @@ class RPGApp:
                 self.reset_game, [], [chatbot, game_state, is_processing, status_box]
             )
 
-            # Non-streaming event handlers
             def show_game_info(game):
                 if game:
                     info = game.get_game_info()
-                    info["current_provider"] = getattr(
-                        game.chat_client, "api_provider", "unknown"
-                    )
-                    info["current_model"] = getattr(
-                        game.chat_client, "model", "unknown"
-                    )
-                    info["current_api_url"] = getattr(
-                        game.chat_client, "api_url", "unknown"
-                    )
+                    info["current_provider"] = getattr(game.chat_client, "api_provider", "unknown")
+                    info["current_model"] = getattr(game.chat_client, "model", "unknown")
                     return info
-                return {"error": "No active game"}
+                return {"status": "No active game"}
 
             def export_markdown(game):
-                return (
-                    ConversationFormatter.to_markdown(game.conversation)
-                    if game and game.conversation
-                    else "No conversation to export"
-                )
+                return ConversationFormatter.to_markdown(game.conversation) if game and game.conversation else "No conversation"
 
             def export_text(game):
-                return (
-                    ConversationFormatter.to_plain_text(game.conversation)
-                    if game and game.conversation
-                    else "No conversation to export"
-                )
+                return ConversationFormatter.to_plain_text(game.conversation) if game and game.conversation else "No conversation"
 
             def test_connection():
                 client = ChatClient()
                 return client.test_connection()
 
-            def test_selected_provider(
-                selected_provider, selected_model, custom_url, custom_key
-            ):
-                try:
-                    client = self._create_client_from_provider(
-                        selected_provider, selected_model, custom_url, custom_key
-                    )
-                    result = client.test_connection()
-                    result["tested_provider"] = selected_provider
-                    result["tested_model"] = selected_model
-                    result["api_url_used"] = client.api_url
-                    return result
-                except Exception as e:
-                    return {
-                        "connected": False,
-                        "error": str(e),
-                        "tested_provider": selected_provider,
-                        "tested_model": selected_model,
-                    }
-
             info_btn.click(show_game_info, [game_state], [game_info_display])
             export_md_btn.click(export_markdown, [game_state], [export_output])
             export_txt_btn.click(export_text, [game_state], [export_output])
             connection_btn.click(test_connection, [], [connection_status])
-
-            # Update test model dropdown when test provider changes
-            def update_test_models(test_provider):
-                config = self.get_provider_config(test_provider)
-                return gr.update(
-                    choices=config["models"], value=config["default_model"]
-                )
-
-            test_provider_dropdown.change(
-                update_test_models, [test_provider_dropdown], [test_model_dropdown]
-            )
-
-            test_provider_btn.click(
-                test_selected_provider,
-                [
-                    test_provider_dropdown,
-                    test_model_dropdown,
-                    custom_api_url,
-                    custom_api_key,
-                ],
-                [test_results],
-            )
-
-            # --- Footer ---
-            gr.Markdown("---")
-            gr.Markdown("*Live Streaming Mode: Messages appear in real-time*")
-            gr.Markdown(
-                f"*Default Config: `{Config.MODEL}` | Server: `{Config.API_URL}`*"
-            )
-
-            # --- Enhanced CSS for better provider selection display ---
-            demo.css = """
-            .status-box { 
-                padding: 6px 10px;
-                border-radius: 6px;
-                background: #f0fdf4;
-                font-weight: 600;
-            }
-            .provider-info {
-                background: #e0f2fe;
-                padding: 8px;
-                border-radius: 4px;
-                margin: 4px 0;
-            }
-            """
 
         return demo
 
@@ -709,6 +897,9 @@ def main():
         )
 
     except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
         print(
             "Check that all dependencies are installed and your API endpoint is reachable"
         )

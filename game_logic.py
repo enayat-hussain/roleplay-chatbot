@@ -248,8 +248,26 @@ Based on choice {player_choice}, provide a complete and satisfying ending that w
 
 class ConversationFormatter:
     @staticmethod
-    def to_gradio_format(conversation: List[Tuple[str, str]]) -> List[Dict[str, str]]:
-        return [{"role": "assistant" if speaker == "GM" else "user", "content": content} for speaker, content in conversation]
+    def to_gradio_format(conversation: List[Tuple[str, str]]) -> List[List[str]]:
+        # Gradio Chatbot expects list of [user_message, bot_message] pairs
+        # Convert GM/Player conversation to this format
+        result = []
+        i = 0
+        while i < len(conversation):
+            speaker, content = conversation[i]
+            if speaker == "GM":
+                # GM message goes in bot slot (index 1)
+                result.append([None, content])
+            else:
+                # Player message goes in user slot (index 0)
+                # Check if next message is GM response
+                if i + 1 < len(conversation) and conversation[i + 1][0] == "GM":
+                    result.append([content, conversation[i + 1][1]])
+                    i += 1  # Skip the GM message we just added
+                else:
+                    result.append([content, None])
+            i += 1
+        return result
 
     @staticmethod
     def to_markdown(conversation: List[Tuple[str, str]]) -> str:

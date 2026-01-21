@@ -59,9 +59,10 @@ class ChatClient:
         provider_lower = (self.api_provider or "").lower()
 
         # Provider detection patterns - FIXED ORDER: URL first, then explicit provider, then model
+        # NOTE: More specific URL patterns should be checked first to avoid false matches
         detection_patterns = {
             "openai": {
-                "url_patterns": ["api.openai.com", "/v1/chat/completions"],
+                "url_patterns": ["api.openai.com"],  # Only match actual OpenAI API
                 "explicit_names": ["openai", "gpt"],
                 "model_indicators": ["gpt-4", "gpt-3.5", "gpt-4o"],
                 "config": {
@@ -235,7 +236,11 @@ class ChatClient:
         """Build request payload based on detected provider"""
         config = self._detect_provider()
 
-        # Base payload
+        # Handle Anthropic differently - it requires system message as separate param
+        if config.get("payload_style") == "anthropic":
+            return self._build_anthropic_payload(messages, stream, config)
+
+        # Base payload for OpenAI-compatible providers
         payload: Dict[str, Any] = {
             config["model_field"]: self.model,
             config["message_field"]: messages,
@@ -244,26 +249,57 @@ class ChatClient:
 
         # ADJUST TOKEN LIMIT FOR FINAL STEPS (8-9 lines)
         if hasattr(self, "is_final_step") and self.is_final_step:
-            if config.get("payload_style") == "anthropic":
-                payload["max_tokens"] = 400  # Increased for better completion
-                payload["temperature"] = 0.5  # Balanced creativity
-            else:
-                payload["max_tokens"] = 400  # Increased for better completion
-                payload["temperature"] = 0.5  # Balanced creativity
+            payload["max_tokens"] = 400  # Increased for better completion
+            payload["temperature"] = 0.5  # Balanced creativity
         else:
-            # Add AI settings based on provider style
-            if config.get("payload_style") == "anthropic":
-                if self.ai_settings.get("max_tokens") is not None:
-                    payload["max_tokens"] = self.ai_settings["max_tokens"]
-                if self.ai_settings.get("temperature") is not None:
-                    payload["temperature"] = self.ai_settings["temperature"]
-                if self.ai_settings.get("top_p") is not None:
-                    payload["top_p"] = self.ai_settings["top_p"]
+            # OpenAI-style parameters (default)
+            payload.update(
+                {k: v for k, v in self.ai_settings.items() if v is not None}
+            )
+
+        return payload
+
+    def _build_anthropic_payload(
+        self, messages: List[Dict[str, str]], stream: bool, config: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Build Anthropic-specific payload with proper system message handling"""
+        # Extract system message from messages array (Anthropic requires it separately)
+        system_content = ""
+        filtered_messages = []
+
+        for msg in messages:
+            if msg.get("role") == "system":
+                # Concatenate multiple system messages if present
+                if system_content:
+                    system_content += "\n\n"
+                system_content += msg.get("content", "")
             else:
-                # OpenAI-style parameters (default)
-                payload.update(
-                    {k: v for k, v in self.ai_settings.items() if v is not None}
-                )
+                filtered_messages.append(msg)
+
+        # Build Anthropic payload
+        payload: Dict[str, Any] = {
+            "model": self.model,
+            "messages": filtered_messages,
+            "stream": stream,
+            "max_tokens": 1024,  # Anthropic REQUIRES max_tokens
+        }
+
+        # Add system message if present
+        if system_content:
+            payload["system"] = system_content
+
+        # ADJUST TOKEN LIMIT FOR FINAL STEPS
+        if hasattr(self, "is_final_step") and self.is_final_step:
+            payload["max_tokens"] = 400
+            payload["temperature"] = 0.5
+        else:
+            # Apply AI settings
+            if self.ai_settings.get("max_tokens") is not None:
+                payload["max_tokens"] = self.ai_settings["max_tokens"]
+            if self.ai_settings.get("temperature") is not None:
+                payload["temperature"] = self.ai_settings["temperature"]
+            if self.ai_settings.get("top_p") is not None:
+                payload["top_p"] = self.ai_settings["top_p"]
 
         return payload
 
@@ -423,6 +459,8 @@ class ChatClient:
 
     def _parse_stream_response_simple(self, response: requests.Response):
         """Simplified stream parsing to avoid encoding issues"""
+        is_anthropic = self._detected_provider == "anthropic"
+
         for raw_line in response.iter_lines(decode_unicode=False):
             if not raw_line:
                 continue
@@ -432,28 +470,46 @@ class ChatClient:
             except UnicodeDecodeError:
                 continue  # Skip problematic lines
 
+            # Handle Anthropic SSE events
+            if line.startswith("event:"):
+                continue  # Skip event type lines
+
             if line.startswith("data: "):
                 data = line[6:].strip()
                 if data in ("[DONE]", "data: [DONE]"):
                     break
                 if data:
-                    content = self._extract_content_simple(data)
+                    content = self._extract_content_simple(data, is_anthropic)
                     if content:
                         yield content
 
-    def _extract_content_simple(self, json_str: str) -> str:
-        """Simplified content extraction"""
+    def _extract_content_simple(self, json_str: str, is_anthropic: bool = False) -> str:
+        """Simplified content extraction with Anthropic support"""
         if not json_str or json_str in ("[DONE]", "data: [DONE]"):
             return ""
 
         try:
             data = json.loads(json_str)
 
-            # Try common paths for content
+            # Handle Anthropic streaming format specifically
+            if is_anthropic:
+                # Anthropic streaming events:
+                # content_block_delta: {"type":"content_block_delta","delta":{"type":"text_delta","text":"..."}}
+                # message_stop: end of message
+                event_type = data.get("type", "")
+
+                if event_type == "content_block_delta":
+                    delta = data.get("delta", {})
+                    if delta.get("type") == "text_delta":
+                        return delta.get("text", "")
+
+                # Skip other event types (message_start, content_block_start, etc.)
+                return ""
+
+            # Try common paths for OpenAI-compatible content
             paths_to_try = [
                 ["choices", 0, "delta", "content"],
                 ["choices", 0, "message", "content"],
-                ["content", 0, "text"],
                 ["message", "content"],
                 ["response"],
             ]
@@ -507,10 +563,23 @@ class ChatClient:
             result = response.json()
             logger.info(f"Received response JSON keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
 
-            # Try multiple paths to extract content
+            # Handle Anthropic non-streaming response format
+            # Anthropic returns: {"content": [{"type": "text", "text": "..."}], ...}
+            if self._detected_provider == "anthropic":
+                content_list = result.get("content", [])
+                if content_list and isinstance(content_list, list):
+                    for block in content_list:
+                        if block.get("type") == "text":
+                            text = block.get("text", "")
+                            if text:
+                                logger.info(f"Extracted Anthropic content: {len(text)} chars")
+                                return text.strip()
+                logger.error(f"Could not extract Anthropic content from: {result}")
+                return "Error: Could not extract content from Anthropic response"
+
+            # Try multiple paths to extract content for OpenAI-compatible APIs
             content_paths = [
                 ["choices", 0, "message", "content"],
-                ["content", 0, "text"],
                 ["message", "content"],
                 ["response"],
                 ["completion"],

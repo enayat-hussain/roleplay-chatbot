@@ -1,8 +1,12 @@
-# 🎲 AI RPG Adventure Game
+# AI RPG Adventure Game
 
 A real-time streaming RPG chatbot with **multi-provider support** that creates interactive text-based adventures using various AI services.
 
-## ✨ Features
+![UI Preview](https://img.shields.io/badge/UI-Modern%20Dark%20Sidebar-1e1e2e?style=flat-square)
+![Python](https://img.shields.io/badge/Python-3.8+-3776ab?style=flat-square&logo=python&logoColor=white)
+![Gradio](https://img.shields.io/badge/Gradio-4.0-orange?style=flat-square)
+
+## Features
 
 ### Core Features
 * **Live Streaming**: Watch AI responses generate in real-time with proper Unicode handling
@@ -12,10 +16,11 @@ A real-time streaming RPG chatbot with **multi-provider support** that creates i
 * **Auto-play Mode**: Watch AI vs AI gameplay with configurable delays
 * **Export Options**: Save adventures as Markdown or plain text
 * **Connection Testing**: Built-in API connection diagnostics for all providers
+* **Modern UI**: Clean, professional interface inspired by ChatGPT/Claude with dark sidebar
 
 ### Supported AI Providers
 * **OpenAI** (GPT-4, GPT-4o, GPT-3.5-turbo)
-* **Anthropic** (Claude-3.5 Sonnet, Claude-3 Haiku, Claude-3 Opus)  
+* **Anthropic** (Claude-3.5 Sonnet, Claude-3 Haiku, Claude-3 Opus)
 * **Ollama** (Local: Llama 3.1, Mistral, CodeLlama, Vicuna, Gemma)
 * **Groq** (Fast inference: Llama, Mixtral, Gemma models)
 * **LM Studio** (Local model server)
@@ -23,7 +28,7 @@ A real-time streaming RPG chatbot with **multi-provider support** that creates i
 * **VLLM** (High-performance local serving)
 * **Custom Providers** (Any OpenAI-compatible API)
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -49,8 +54,8 @@ ollama serve
 
 1. **Clone the Repository**
    ```bash
-   git clone <your-repo-url>
-   cd rpg-chatbot
+   git clone https://github.com/enayat-hussain/roleplay-chatbot.git
+   cd roleplay-chatbot
    ```
 
 2. **Install Dependencies**
@@ -62,18 +67,18 @@ ollama serve
    ```bash
    cp .env.example .env
    ```
-   
+
    Example `.env` configuration:
    ```env
    # OpenAI
    OPENAI_API_KEY=your_openai_key_here
-   
+
    # Anthropic
    ANTHROPIC_API_KEY=your_anthropic_key_here
-   
+
    # Groq
    GROQ_API_KEY=your_groq_key_here
-   
+
    # Generic fallback
    API_KEY=your_api_key_here
    ```
@@ -85,26 +90,26 @@ ollama serve
 
 5. **Open in Browser**
    * Navigate to [http://127.0.0.1:7860](http://127.0.0.1:7860)
-   * Select your AI provider from the dropdown
+   * Select your AI provider from the sidebar
    * Add API key if required
-   * Click "Start" to begin your adventure!
+   * Click "Start Adventure" to begin!
 
-## 🎮 Usage
+## Usage
 
 ### Getting Started
-1. **Select Provider**: Choose from OpenAI, Anthropic, Ollama, etc.
+1. **Select Provider**: Choose from OpenAI, Anthropic, Ollama, etc. in the dark sidebar
 2. **Select Model**: Pick the specific model you want to use
 3. **Add API Key**: Enter your API key (if required by provider)
 4. **Set Max Steps**: Choose adventure length (1-100 steps)
-5. **Start Playing**: Click "Start" and make choices!
+5. **Start Playing**: Click "Start Adventure" and make choices!
 
 ### Game Modes
 
 #### Manual Mode
-* Click "Start" to begin your adventure
-* Use "Next" to advance step by step
+* Click "Start Adventure" to begin
+* Use "Next Step" to advance step by step
 * Watch responses stream in real-time
-* **Final steps automatically provide 8-9 line conclusions**
+* Final steps automatically provide 8-9 line conclusions
 
 #### Auto-play Mode
 * Click "Auto-play" for hands-free adventure
@@ -113,14 +118,14 @@ ollama serve
 * Watch AI make choices and respond automatically
 
 #### Advanced Features
-* **Provider Testing**: Use "System" tab to test different providers
+* **New Game**: Reset and start fresh with "+ New Game" button
 * **Export & Save**: Save memorable adventures as Markdown/text
 * **Game Statistics**: View detailed game information and progress
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-rpg-chatbot/
+roleplay-chatbot/
 ├── app.py                # Main Gradio application (UI + provider selection)
 ├── chatbot.py            # Universal AI client with auto-detection of LLMs
 ├── game_logic.py         # RPG game state management + intelligent endings
@@ -132,15 +137,14 @@ rpg-chatbot/
 │
 ├── prompts/              # Customizable prompt templates
 │   ├── gm_prompt.txt     # Game Master instructions
-│   └── rp_prompt.txt # Player role instructions
+│   └── rp_prompt.txt     # Player role instructions
 │
 ├── chat_logs/            # Auto-saved conversation logs (.txt files)
 │
 └── README.md             # Project documentation
-
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 ### Default Provider URLs and Models
 
@@ -148,13 +152,13 @@ The application comes with pre-configured settings for each provider:
 
 | Provider | Default URL | Default Model | API Key Required |
 |----------|-------------|---------------|------------------|
-| **OpenAI (GPT)** | `https://api.openai.com/v1/chat/completions` | `gpt-4o-mini` | ✅ Yes |
-| **Anthropic (Claude)** | `https://api.anthropic.com/v1/messages` | `claude-3-haiku-20240307` | ✅ Yes |
-| **Ollama (Local)** | `http://localhost:11434/v1/chat/completions` | `llama3.1` | ❌ No |
-| **Groq** | `https://api.groq.com/openai/v1/chat/completions` | `llama-3.1-8b-instant` | ✅ Yes |
-| **LM Studio** | `http://localhost:1234/v1/chat/completions` | `local-model` | ❌ No |
-| **Text Generation WebUI** | `http://localhost:5000/v1/chat/completions` | `local-model` | ❌ No |
-| **VLLM** | `http://localhost:8000/v1/chat/completions` | `local-model` | ❌ No |
+| **OpenAI (GPT)** | `https://api.openai.com/v1/chat/completions` | `gpt-4o-mini` | Yes |
+| **Anthropic (Claude)** | `https://api.anthropic.com/v1/messages` | `claude-3-haiku-20240307` | Yes |
+| **Ollama (Local)** | `http://localhost:11434/v1/chat/completions` | `llama3.1` | No |
+| **Groq** | `https://api.groq.com/openai/v1/chat/completions` | `llama-3.1-8b-instant` | Yes |
+| **LM Studio** | `http://localhost:1234/v1/chat/completions` | `local-model` | No |
+| **Text Generation WebUI** | `http://localhost:5000/v1/chat/completions` | `local-model` | No |
+| **VLLM** | `http://localhost:8000/v1/chat/completions` | `local-model` | No |
 
 ### Available Models by Provider
 
@@ -205,7 +209,7 @@ Customize the game experience by editing:
 * `prompts/gm_prompt.txt` - Instructions for the Game Master AI
 * `prompts/rp_prompt.txt` - Instructions for the Player AI (auto-play mode)
 
-## 🛠️ Local AI Setup
+## Local AI Setup
 
 ### Ollama (Recommended)
 ```bash
@@ -233,26 +237,27 @@ cd text-generation-webui
 ```
 - URL: `http://localhost:5000/v1/chat/completions`
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Recent Fixes Applied
-* ✅ **Fixed Unicode/spelling issues** – Proper UTF-8 encoding handling  
-* ✅ **Improved streaming reliability** – Better error handling and fallbacks  
-* ✅ **Chat logs saving** – Each conversation now saved as a `.txt` file  
-* ✅ **Multi-LLM support** – App now works seamlessly with different LLM providers  
-* ✅ **Step-limited endings** – Story automatically ends after reaching max number of steps  
-* ✅ **UI improvements** – Cleaner layout, better alignment, and more intuitive interactions  
-
+* **Fixed Unicode/spelling issues** - Proper UTF-8 encoding handling
+* **Improved streaming reliability** - Better error handling and fallbacks
+* **Chat logs saving** - Each conversation now saved as a `.txt` file
+* **Multi-LLM support** - App now works seamlessly with different LLM providers
+* **Step-limited endings** - Story automatically ends after reaching max number of steps
+* **UI overhaul** - Modern dark sidebar design with Catppuccin color scheme
+* **Fixed alignment issues** - Chat box, status bar, and buttons properly aligned
+* **Compact buttons** - Appropriately sized action buttons
 
 ### Common Issues
 
 **Connection Errors**
 * Verify API key is correct
 * Check if local servers are running (`ollama serve`)
-* Use "System" tab to test connections
+* Use Advanced Options to test connections
 
 **Provider Issues**
-* Try switching providers via the dropdown
+* Try switching providers via the sidebar dropdown
 * Test different models for your provider
 * Check API rate limits and billing status
 
@@ -263,22 +268,21 @@ cd text-generation-webui
 
 ### System Status
 Use the built-in connection testing features:
-* **"Test API Connection"** - Check current configuration
-* **Provider Testing** - Test specific provider/model combinations
-* **System Tab** - Comprehensive diagnostics
+* **"Test Connection"** - Check current configuration in Advanced Options
+* **"Show Game Info"** - View current game state and provider details
 
-## 📋 Requirements
+## Requirements
 
 * Python 3.8+
 * AI provider access (local server OR cloud API key)
 * 4GB+ RAM (for local models)
 * Internet connection (for cloud providers)
 
-## 🤝 Contributing
+## Contributing
 
 Areas for improvement:
 * Additional AI provider support
-* Enhanced prompt templates  
+* Enhanced prompt templates
 * Better error handling
 * UI/UX improvements
 
@@ -287,24 +291,24 @@ Areas for improvement:
 3. Test thoroughly with multiple providers
 4. Submit a pull request
 
-## 🆘 Support
+## Support
 
 If you encounter issues:
 
 1. **Check troubleshooting section** above
-2. **Use built-in connection testing** via System tab
+2. **Use built-in connection testing** via Advanced Options
 3. **Try different providers** - some may work better than others
 4. **Review console output** for detailed error messages
 5. **Open GitHub issue** with provider details and error logs
 
 ### Provider-Specific Support
 
-**OpenAI**: Check API billing and rate limits  
-**Anthropic**: Verify API key and model access  
-**Ollama**: Ensure `ollama serve` is running  
-**Groq**: Check free tier limits  
+**OpenAI**: Check API billing and rate limits
+**Anthropic**: Verify API key and model access
+**Ollama**: Ensure `ollama serve` is running
+**Groq**: Check free tier limits
 **Local Models**: Verify server status and model loading
 
 ---
 
-*Built with ❤️ using Gradio and configurable AI APIs - Now supporting 8+ providers!*
+*Built with Gradio and configurable AI APIs - Supporting 8+ providers!*
