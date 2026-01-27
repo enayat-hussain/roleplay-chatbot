@@ -534,15 +534,16 @@ class RPGApp:
         .chatbot-box {
             border: none !important;
             background: #f8fafc !important;
+            background-color: #f8fafc !important;
             box-shadow: none !important;
             flex: 1 !important;
             min-height: 0 !important;
             overflow-y: auto !important;
             overflow-x: hidden !important;
         }
+
         .chatbot-box > div {
-            height: 100% !important;
-            padding: 24px !important;
+            padding: 16px !important;
             overflow-y: auto !important;
             overflow-x: hidden !important;
         }
@@ -572,9 +573,13 @@ class RPGApp:
         }
 
         /* Bot messages - LEFT side */
-        .chatbot-box .bot {
+        .chatbot-box .bot,
+        .chatbot-box .bot * {
             background: #f1f5f9 !important;
+            background-color: #f1f5f9 !important;
             color: #1e293b !important;
+        }
+        .chatbot-box .bot {
             align-self: flex-start !important;
             margin-right: auto !important;
             margin-left: 0 !important;
@@ -582,9 +587,13 @@ class RPGApp:
         }
 
         /* User messages - RIGHT side, fixed position */
-        .chatbot-box .user {
+        .chatbot-box .user,
+        .chatbot-box .user * {
             background: #3b82f6 !important;
+            background-color: #3b82f6 !important;
             color: #ffffff !important;
+        }
+        .chatbot-box .user {
             align-self: flex-end !important;
             margin-left: auto !important;
             margin-right: 0 !important;
@@ -601,12 +610,29 @@ class RPGApp:
         .status-bar {
             background: #f1f5f9 !important;
             border: 1px solid #e2e8f0 !important;
-            border-radius: 8px !important;
-            padding: 12px 16px !important;
+            border-left: 3px solid #3b82f6 !important;
+            border-radius: 6px !important;
+            padding: 8px 12px !important;
             font-size: 13px !important;
             color: #64748b !important;
-            margin: 16px 0 !important;
+            margin: 8px 0 !important;
             flex-shrink: 0 !important;
+            overflow: hidden !important;
+            line-height: 1.4 !important;
+            height: 38px !important;
+            min-height: 38px !important;
+            max-height: 38px !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+
+        .status-bar p,
+        .status-bar span,
+        .status-bar div {
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            height: auto !important;
         }
 
         /* Button row */
