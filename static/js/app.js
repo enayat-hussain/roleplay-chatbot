@@ -542,70 +542,27 @@ async function resumeAutoplay() {
     setProcessing(false);
 }
 
-async function continueStoryManual(stepsToAdd) {
-    if (isProcessing) return;
-
+function continueStoryManual(stepsToAdd) {
     // Update the max steps
     const newMax = parseInt(stepsSlider.value) + stepsToAdd;
     stepsSlider.value = newMax;
     stepsSlider.max = Math.max(20, newMax);
     stepsValue.textContent = newMax;
 
-    // Reset story complete flag and continue
+    // Reset story complete flag so user can continue manually
     storyComplete = false;
     autoplayStopped = false;
-    setProcessing(true);
-    setStatus('<strong>Status:</strong> Continuing the story...');
 
-    let currentContent = '';
-
-    try {
-        const response = await fetch('/api/step', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(getRequestData())
-        });
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let messageAdded = false;
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const text = decoder.decode(value);
-            const lines = text.split('\n');
-
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    try {
-                        const data = JSON.parse(line.slice(6));
-
-                        if (data.type === 'chunk') {
-                            if (data.choice && !messageAdded) {
-                                addMessage('user', data.choice.toString());
-                                addMessage('bot', '');
-                                messageAdded = true;
-                            }
-                            currentContent += data.content;
-                            updateLastBotMessage(currentContent);
-                        } else if (data.type === 'done') {
-                            setStatus(`<strong>Status:</strong> Story continues! Step ${data.step}/${stepsSlider.value}`);
-                        } else if (data.type === 'error') {
-                            setStatus(`<strong>Error:</strong> ${data.message}`);
-                        }
-                    } catch (e) {
-                        // Ignore parse errors
-                    }
-                }
-            }
-        }
-    } catch (error) {
-        setStatus(`<strong>Error:</strong> ${error.message}`);
-    }
-
+    // Update UI - user can now click "Next Step" to continue
     setProcessing(false);
+    setStatus(`<strong>Status:</strong> Story extended! Click "Next Step" to continue. (${stepsSlider.value - getCurrentStep()}/${stepsSlider.value} steps remaining)`);
+}
+
+function getCurrentStep() {
+    // Parse current step from status or return 0
+    const statusText = statusBar.textContent;
+    const match = statusText.match(/Step (\d+)/);
+    return match ? parseInt(match[1]) : 0;
 }
 
 async function continueWithAutoplay(stepsToAdd) {
