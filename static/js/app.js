@@ -28,6 +28,7 @@ const stopBtn = document.getElementById('stopBtn');
 const resumeBtn = document.getElementById('resumeBtn');
 const continueBtn = document.getElementById('continueBtn');
 const newGameBtn = document.getElementById('newGameBtn');
+const resetBtn = document.getElementById('resetBtn');
 
 // Modal Elements
 const continueModal = document.getElementById('continueModal');
@@ -62,7 +63,8 @@ function setupEventListeners() {
     stopBtn.addEventListener('click', stopAutoplay);
     resumeBtn.addEventListener('click', resumeAutoplay);
     continueBtn.addEventListener('click', showContinueModal);
-    newGameBtn.addEventListener('click', resetGame);
+    newGameBtn.addEventListener('click', openNewGame);
+    resetBtn.addEventListener('click', resetGame);
 
     // Modal events
     closeModal.addEventListener('click', hideContinueModal);
@@ -715,6 +717,11 @@ async function continueWithAutoplay(stepsToAdd) {
     isAutoPlaying = false;
     abortController = null;
     setProcessing(false);
+}
+
+function openNewGame() {
+    // Open the app in a new tab so user can keep current chat
+    window.open(window.location.href, '_blank');
 }
 
 async function resetGame() {

@@ -73,6 +73,30 @@ body {
     transform: translateY(0);
 }
 
+/* Reset Button */
+.reset-btn {
+    background: transparent;
+    color: #a6adc8;
+    border: 1px solid #45475a;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 8px;
+}
+
+.reset-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.reset-btn:active {
+    transform: scale(0.98);
+}
+
 /* Divider */
 .divider {
     height: 1px;
