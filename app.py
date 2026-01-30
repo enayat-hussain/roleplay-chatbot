@@ -721,6 +721,35 @@ class RPGApp:
         }
         """
 
+        # JavaScript to fix Windows black background issue
+        fix_script = """
+        <script>
+        function fixChatbotBackground() {
+            // Fix chatbot container backgrounds
+            const chatboxes = document.querySelectorAll('.chatbot-box, .chatbot-box > div, .chatbot-box [class*="wrap"], .chatbot-box [class*="message"]');
+            chatboxes.forEach(el => {
+                if (el && !el.classList.contains('bot') && !el.classList.contains('user')) {
+                    el.style.backgroundColor = '#f8fafc';
+                }
+            });
+
+            // Fix any black backgrounds specifically
+            const allElements = document.querySelectorAll('.chatbot-box *');
+            allElements.forEach(el => {
+                const bg = window.getComputedStyle(el).backgroundColor;
+                if (bg === 'rgb(0, 0, 0)' || bg === '#000000' || bg === 'black') {
+                    el.style.backgroundColor = '#f8fafc';
+                }
+            });
+        }
+
+        // Run on load and periodically
+        document.addEventListener('DOMContentLoaded', fixChatbotBackground);
+        window.addEventListener('load', fixChatbotBackground);
+        setInterval(fixChatbotBackground, 500);
+        </script>
+        """
+
         # Custom theme to fix Windows black background issue
         custom_theme = gr.themes.Soft(
             primary_hue="blue",
@@ -733,6 +762,9 @@ class RPGApp:
             theme=custom_theme,
             css=custom_css,
         ) as demo:
+            # Inject JavaScript fix for Windows
+            gr.HTML(fix_script)
+
             # State
             game_state = gr.State(None)
             is_processing = gr.State(False)
