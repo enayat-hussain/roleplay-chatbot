@@ -6,6 +6,7 @@ let gameStarted = false;
 let isAutoPlaying = false;
 let storyComplete = false;
 let abortController = null;
+let selectedContinueMode = 'manual'; // 'manual' or 'auto'
 
 // DOM Elements
 const providerSelect = document.getElementById('providerSelect');
@@ -25,6 +26,15 @@ const autoplayBtn = document.getElementById('autoplayBtn');
 const stopBtn = document.getElementById('stopBtn');
 const continueBtn = document.getElementById('continueBtn');
 const newGameBtn = document.getElementById('newGameBtn');
+
+// Modal Elements
+const continueModal = document.getElementById('continueModal');
+const closeModal = document.getElementById('closeModal');
+const addStepsInput = document.getElementById('addStepsInput');
+const modeManual = document.getElementById('modeManual');
+const modeAuto = document.getElementById('modeAuto');
+const cancelContinue = document.getElementById('cancelContinue');
+const confirmContinue = document.getElementById('confirmContinue');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -48,8 +58,31 @@ function setupEventListeners() {
     nextBtn.addEventListener('click', nextStep);
     autoplayBtn.addEventListener('click', autoplay);
     stopBtn.addEventListener('click', stopAutoplay);
-    continueBtn.addEventListener('click', continueStory);
+    continueBtn.addEventListener('click', showContinueModal);
     newGameBtn.addEventListener('click', resetGame);
+
+    // Modal events
+    closeModal.addEventListener('click', hideContinueModal);
+    cancelContinue.addEventListener('click', hideContinueModal);
+    confirmContinue.addEventListener('click', confirmContinueStory);
+
+    // Mode selection
+    modeManual.addEventListener('click', () => selectMode('manual'));
+    modeAuto.addEventListener('click', () => selectMode('auto'));
+
+    // Close modal on outside click
+    continueModal.addEventListener('click', (e) => {
+        if (e.target === continueModal) {
+            hideContinueModal();
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && continueModal.classList.contains('active')) {
+            hideContinueModal();
+        }
+    });
 }
 
 function updateSliderLabels() {
@@ -140,6 +173,34 @@ function getRequestData(extraSteps = 0) {
         delay: parseInt(delaySlider.value),
         session_id: sessionId
     };
+}
+
+// Modal functions
+function showContinueModal() {
+    continueModal.classList.add('active');
+    addStepsInput.value = 5;
+    selectMode('manual');
+}
+
+function hideContinueModal() {
+    continueModal.classList.remove('active');
+}
+
+function selectMode(mode) {
+    selectedContinueMode = mode;
+    modeManual.classList.toggle('active', mode === 'manual');
+    modeAuto.classList.toggle('active', mode === 'auto');
+}
+
+function confirmContinueStory() {
+    const stepsToAdd = parseInt(addStepsInput.value) || 5;
+    hideContinueModal();
+
+    if (selectedContinueMode === 'auto') {
+        continueWithAutoplay(stepsToAdd);
+    } else {
+        continueStoryManual(stepsToAdd);
+    }
 }
 
 async function startGame() {
@@ -361,8 +422,14 @@ function stopAutoplay() {
     }
 }
 
-async function continueStory() {
+async function continueStoryManual(stepsToAdd) {
     if (isProcessing) return;
+
+    // Update the max steps
+    const newMax = parseInt(stepsSlider.value) + stepsToAdd;
+    stepsSlider.value = newMax;
+    stepsSlider.max = Math.max(20, newMax);
+    stepsValue.textContent = newMax;
 
     // Reset story complete flag and continue
     storyComplete = false;
@@ -372,13 +439,10 @@ async function continueStory() {
     let currentContent = '';
 
     try {
-        // Call step with extra steps to allow continuing beyond original max
-        const requestData = getRequestData(5); // Add 5 more steps to the limit
-
         const response = await fetch('/api/step', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestData)
+            body: JSON.stringify(getRequestData())
         });
 
         const reader = response.body.getReader();
@@ -406,13 +470,7 @@ async function continueStory() {
                             currentContent += data.content;
                             updateLastBotMessage(currentContent);
                         } else if (data.type === 'done') {
-                            // Update the slider to reflect new max
-                            const newMax = parseInt(stepsSlider.value) + 5;
-                            stepsSlider.value = newMax;
-                            stepsSlider.max = Math.max(20, newMax);
-                            stepsValue.textContent = newMax;
-
-                            setStatus(`<strong>Status:</strong> Story continues! Step ${data.step}/${newMax}`);
+                            setStatus(`<strong>Status:</strong> Story continues! Step ${data.step}/${stepsSlider.value}`);
                         } else if (data.type === 'error') {
                             setStatus(`<strong>Error:</strong> ${data.message}`);
                         }
@@ -426,6 +484,114 @@ async function continueStory() {
         setStatus(`<strong>Error:</strong> ${error.message}`);
     }
 
+    setProcessing(false);
+}
+
+async function continueWithAutoplay(stepsToAdd) {
+    if (isProcessing) return;
+
+    // Update the max steps
+    const currentMax = parseInt(stepsSlider.value);
+    const newMax = currentMax + stepsToAdd;
+    stepsSlider.value = newMax;
+    stepsSlider.max = Math.max(20, newMax);
+    stepsValue.textContent = newMax;
+
+    // Reset story complete and start auto-playing
+    storyComplete = false;
+    setProcessing(true);
+    isAutoPlaying = true;
+    stopBtn.style.display = 'block';
+    setStatus('<strong>Status:</strong> Continuing with auto-play...');
+
+    let currentContent = '';
+    let currentStep = currentMax; // Start from where we were
+
+    // Create abort controller for this request
+    abortController = new AbortController();
+
+    try {
+        // We'll loop and take steps until we reach the new max
+        while (currentStep < newMax) {
+            if (abortController.signal.aborted) break;
+
+            setStatus(`<strong>Status:</strong> Auto-play continuing... Step ${currentStep + 1}/${newMax}`);
+
+            const response = await fetch('/api/step', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(getRequestData()),
+                signal: abortController.signal
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let messageAdded = false;
+            currentContent = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const text = decoder.decode(value);
+                const lines = text.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+
+                            if (data.type === 'chunk') {
+                                if (data.choice && !messageAdded) {
+                                    addMessage('user', data.choice.toString());
+                                    addMessage('bot', '');
+                                    messageAdded = true;
+                                }
+                                currentContent += data.content;
+                                updateLastBotMessage(currentContent);
+                            } else if (data.type === 'done') {
+                                currentStep = data.step;
+                                if (data.complete) {
+                                    storyComplete = true;
+                                    setStatus(`<strong>Status:</strong> Auto-play complete! (${data.step} steps) - Click "Continue Story" to keep playing`);
+                                } else {
+                                    setStatus(`<strong>Status:</strong> Auto-play Step ${currentStep}/${newMax}`);
+                                }
+                            } else if (data.type === 'error') {
+                                setStatus(`<strong>Error:</strong> ${data.message}`);
+                                throw new Error(data.message);
+                            }
+                        } catch (e) {
+                            if (e.message) throw e;
+                            // Ignore parse errors
+                        }
+                    }
+                }
+            }
+
+            // Check if we've reached the max
+            if (currentStep >= newMax) {
+                storyComplete = true;
+                setStatus(`<strong>Status:</strong> Auto-play complete! (${currentStep} steps) - Click "Continue Story" to keep playing`);
+                break;
+            }
+
+            // Delay between steps
+            const delay = parseInt(delaySlider.value) * 1000;
+            if (delay > 0) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            setStatus(`<strong>Status:</strong> Auto-play stopped at step ${currentStep}. Use "Next Step" to continue manually.`);
+        } else {
+            setStatus(`<strong>Error:</strong> ${error.message}`);
+        }
+    }
+
+    isAutoPlaying = false;
+    abortController = null;
     setProcessing(false);
 }
 

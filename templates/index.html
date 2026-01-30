@@ -77,6 +77,41 @@
         </main>
     </div>
 
+    <!-- Continue Story Modal -->
+    <div id="continueModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Continue Your Adventure</h2>
+                <button id="closeModal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-field">
+                    <label for="addStepsInput">How many steps to add?</label>
+                    <input type="number" id="addStepsInput" class="modal-input" min="1" max="50" value="5">
+                </div>
+                <div class="modal-field">
+                    <label>Play Mode</label>
+                    <div class="mode-buttons">
+                        <button id="modeManual" class="mode-btn active">
+                            <span class="mode-icon">🎮</span>
+                            <span class="mode-label">Manual</span>
+                            <span class="mode-desc">Step by step</span>
+                        </button>
+                        <button id="modeAuto" class="mode-btn">
+                            <span class="mode-icon">🤖</span>
+                            <span class="mode-label">Auto-play</span>
+                            <span class="mode-desc">AI plays for you</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelContinue" class="secondary-action">Cancel</button>
+                <button id="confirmContinue" class="success-action">Continue Story</button>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
