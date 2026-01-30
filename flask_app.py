@@ -1,0 +1,299 @@
+"""Flask-based RPG Chatbot Application"""
+import json
+import time
+from flask import Flask, render_template, request, jsonify, Response, stream_with_context
+from config import Config
+from game_logic import GameState, ConversationFormatter
+from chatbot import ChatClient
+
+app = Flask(__name__)
+
+# Store game states per session (in production, use proper session management)
+game_sessions = {}
+
+
+def get_provider_config(provider_name: str) -> dict:
+    """Get configuration for a specific provider"""
+    provider_configs = {
+        "OpenAI (GPT)": {
+            "api_url": "https://api.openai.com/v1/chat/completions",
+            "default_model": "gpt-4o-mini",
+            "models": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
+            "requires_key": True,
+            "provider": "openai",
+        },
+        "Anthropic (Claude)": {
+            "api_url": "https://api.anthropic.com/v1/messages",
+            "default_model": "claude-3-haiku-20240307",
+            "models": [
+                "claude-3-5-sonnet-20241022",
+                "claude-3-haiku-20240307",
+                "claude-3-opus-20240229",
+            ],
+            "requires_key": True,
+            "provider": "anthropic",
+        },
+        "Google (Gemini)": {
+            "api_url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            "default_model": "gemini-2.0-flash",
+            "models": [
+                "gemini-2.5-flash-lite",
+                "gemini-2.0-flash",
+                "gemini-2.0-flash-lite",
+            ],
+            "requires_key": True,
+            "provider": "gemini",
+        },
+        "DeepSeek": {
+            "api_url": "https://api.deepseek.com/chat/completions",
+            "default_model": "deepseek-chat",
+            "models": [
+                "deepseek-chat",
+                "deepseek-coder",
+                "deepseek-reasoner",
+            ],
+            "requires_key": True,
+            "provider": "deepseek",
+        },
+        "Ollama (Local)": {
+            "api_url": "http://localhost:11434/v1/chat/completions",
+            "default_model": "llama3.1",
+            "models": [
+                "llama3.1",
+                "llama3:latest",
+                "mistral",
+                "codellama",
+                "vicuna",
+                "gemma:2b",
+            ],
+            "requires_key": False,
+            "provider": "ollama",
+        },
+        "Groq": {
+            "api_url": "https://api.groq.com/openai/v1/chat/completions",
+            "default_model": "llama-3.1-8b-instant",
+            "models": [
+                "llama-3.1-8b-instant",
+                "meta-llama/llama-4-scout-17b-16e-instruct",
+                "gemma2-9b-it",
+            ],
+            "requires_key": True,
+            "provider": "groq",
+        },
+        "LM Studio": {
+            "api_url": "http://localhost:1234/v1/chat/completions",
+            "default_model": "local-model",
+            "models": ["local-model"],
+            "requires_key": False,
+            "provider": "lmstudio",
+        },
+        "Custom Provider": {
+            "api_url": "",
+            "default_model": "custom-model",
+            "models": ["custom-model"],
+            "requires_key": True,
+            "provider": "custom",
+        },
+    }
+    return provider_configs.get(provider_name, provider_configs["Custom Provider"])
+
+
+def create_client(provider_name, model_name, api_url="", api_key=""):
+    """Create a ChatClient for the selected provider"""
+    provider_config = get_provider_config(provider_name)
+    url = api_url.strip() if api_url.strip() else provider_config["api_url"]
+
+    client = ChatClient(model=model_name)
+    client.api_url = url
+    client.api_key = api_key.strip() if api_key else ""
+    client.api_provider = provider_config["provider"]
+    return client
+
+
+def _default_gm_prompt() -> str:
+    return (
+        "You are a vivid and safety-conscious RPG Game Master. "
+        "Set each scene with clear, engaging description (about 3–4 lines). "
+        "Always end your response with exactly four numbered choices (1–4), "
+        "each being concise, meaningful, and distinct."
+    )
+
+
+def _default_player_prompt() -> str:
+    return "You are the Player. Your choices are numbers 1-4 responding to the GM options."
+
+
+@app.route('/')
+def index():
+    """Serve the main page"""
+    providers = [
+        "OpenAI (GPT)",
+        "Anthropic (Claude)",
+        "Google (Gemini)",
+        "DeepSeek",
+        "Ollama (Local)",
+        "Groq",
+        "LM Studio",
+        "Custom Provider",
+    ]
+    return render_template('index.html', providers=providers)
+
+
+@app.route('/api/provider/<provider_name>')
+def get_provider(provider_name):
+    """Get provider configuration"""
+    config = get_provider_config(provider_name)
+    return jsonify(config)
+
+
+@app.route('/api/start', methods=['POST'])
+def start_game():
+    """Start a new game and stream the initial response"""
+    data = request.json
+    provider = data.get('provider', 'Groq')
+    model = data.get('model', 'llama-3.1-8b-instant')
+    api_key = data.get('api_key', '')
+    api_url = data.get('api_url', '')
+    session_id = data.get('session_id', 'default')
+
+    def generate():
+        try:
+            client = create_client(provider, model, api_url, api_key)
+            gm_prompt = _default_gm_prompt()
+            player_prompt = _default_player_prompt()
+            game = GameState(gm_prompt, player_prompt, chat_client=client)
+            game_sessions[session_id] = game
+
+            for success, conversation, response in game.start_game_streaming():
+                if success:
+                    yield f"data: {json.dumps({'type': 'chunk', 'content': response, 'conversation': ConversationFormatter.to_gradio_format(conversation)})}\n\n"
+                else:
+                    yield f"data: {json.dumps({'type': 'error', 'message': response})}\n\n"
+                    return
+
+            yield f"data: {json.dumps({'type': 'done', 'step': game.step_count})}\n\n"
+
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
+
+@app.route('/api/step', methods=['POST'])
+def next_step():
+    """Take the next step in the game"""
+    data = request.json
+    session_id = data.get('session_id', 'default')
+    max_steps = data.get('max_steps', 10)
+    provider = data.get('provider', 'Groq')
+    model = data.get('model', 'llama-3.1-8b-instant')
+    api_key = data.get('api_key', '')
+    api_url = data.get('api_url', '')
+
+    game = game_sessions.get(session_id)
+    if not game:
+        return jsonify({'error': 'No active game. Start a new game first.'}), 400
+
+    def generate():
+        try:
+            # Update client for this step
+            client = create_client(provider, model, api_url, api_key)
+            game.chat_client = client
+
+            for success, conversation, choice, response in game.take_step_streaming(max_steps=max_steps):
+                if success:
+                    yield f"data: {json.dumps({'type': 'chunk', 'content': response, 'choice': choice, 'conversation': ConversationFormatter.to_gradio_format(conversation)})}\n\n"
+                else:
+                    yield f"data: {json.dumps({'type': 'error', 'message': response})}\n\n"
+                    return
+
+            is_complete = game.step_count >= max_steps
+            yield f"data: {json.dumps({'type': 'done', 'step': game.step_count, 'complete': is_complete})}\n\n"
+
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
+
+@app.route('/api/autoplay', methods=['POST'])
+def autoplay():
+    """Auto-play the game"""
+    data = request.json
+    max_steps = data.get('max_steps', 5)
+    delay = data.get('delay', 1)
+    provider = data.get('provider', 'Groq')
+    model = data.get('model', 'llama-3.1-8b-instant')
+    api_key = data.get('api_key', '')
+    api_url = data.get('api_url', '')
+    session_id = data.get('session_id', 'default')
+
+    def generate():
+        try:
+            client = create_client(provider, model, api_url, api_key)
+            gm_prompt = _default_gm_prompt()
+            player_prompt = _default_player_prompt()
+            game = GameState(gm_prompt, player_prompt, chat_client=client)
+            game_sessions[session_id] = game
+
+            # Start game
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Starting adventure...'})}\n\n"
+
+            for success, conversation, response in game.start_game_streaming():
+                if not success:
+                    yield f"data: {json.dumps({'type': 'error', 'message': response})}\n\n"
+                    return
+                yield f"data: {json.dumps({'type': 'chunk', 'content': response, 'conversation': ConversationFormatter.to_gradio_format(conversation)})}\n\n"
+
+            yield f"data: {json.dumps({'type': 'step_done', 'step': 0})}\n\n"
+
+            if delay > 0:
+                time.sleep(delay)
+
+            # Auto-play steps
+            while game.step_count < max_steps:
+                yield f"data: {json.dumps({'type': 'status', 'message': f'Step {game.step_count + 1}/{max_steps}...'})}\n\n"
+
+                for success, conversation, choice, response in game.take_step_streaming(max_steps=max_steps):
+                    if not success:
+                        yield f"data: {json.dumps({'type': 'error', 'message': response})}\n\n"
+                        return
+                    yield f"data: {json.dumps({'type': 'chunk', 'content': response, 'choice': choice, 'conversation': ConversationFormatter.to_gradio_format(conversation)})}\n\n"
+
+                yield f"data: {json.dumps({'type': 'step_done', 'step': game.step_count})}\n\n"
+
+                if game.step_count >= max_steps:
+                    break
+
+                if delay > 0:
+                    time.sleep(delay)
+
+            yield f"data: {json.dumps({'type': 'complete', 'step': game.step_count})}\n\n"
+
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
+
+@app.route('/api/reset', methods=['POST'])
+def reset_game():
+    """Reset the game"""
+    data = request.json
+    session_id = data.get('session_id', 'default')
+
+    if session_id in game_sessions:
+        del game_sessions[session_id]
+
+    return jsonify({'status': 'reset'})
+
+
+if __name__ == '__main__':
+    print("Starting Flask RPG Chatbot...")
+    print(f"Server running at http://{Config.SERVER_HOST}:{Config.SERVER_PORT}")
+    app.run(
+        host=Config.SERVER_HOST,
+        port=Config.SERVER_PORT,
+        debug=True,
+        threaded=True
+    )

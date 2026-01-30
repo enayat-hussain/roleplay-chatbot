@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPG Adventure</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <button id="newGameBtn" class="new-chat-btn">+ New Game</button>
+
+            <div class="divider"></div>
+
+            <p class="settings-label">AI Provider</p>
+            <select id="providerSelect" class="sidebar-select">
+                {% for provider in providers %}
+                <option value="{{ provider }}" {% if provider == 'Groq' %}selected{% endif %}>{{ provider }}</option>
+                {% endfor %}
+            </select>
+
+            <select id="modelSelect" class="sidebar-select">
+                <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+            </select>
+
+            <input type="password" id="apiKey" class="sidebar-input" placeholder="API Key">
+            <input type="text" id="apiUrl" class="sidebar-input" placeholder="Custom API URL (optional)" style="display: none;">
+
+            <div class="divider"></div>
+
+            <p class="settings-label">Game Settings</p>
+
+            <div class="slider-container">
+                <label for="stepsSlider">Steps: <span id="stepsValue">10</span></label>
+                <input type="range" id="stepsSlider" min="1" max="20" value="10">
+            </div>
+
+            <div class="slider-container">
+                <label for="delaySlider">Auto-play delay: <span id="delayValue">3</span>s</label>
+                <input type="range" id="delaySlider" min="0" max="10" value="3">
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="main-chat">
+            <!-- Header -->
+            <header class="app-header">
+                <h1 class="app-title">RPG Adventure</h1>
+                <span class="model-badge" id="modelBadge">Select a provider to start</span>
+            </header>
+
+            <!-- Chat Container -->
+            <div class="chat-container">
+                <div id="chatbox" class="chatbox">
+                    <!-- Messages will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Status Bar -->
+            <div id="statusBar" class="status-bar">
+                Ready to start your adventure. Configure your AI provider and click <strong>Start</strong>.
+            </div>
+
+            <!-- Button Row -->
+            <div class="button-row">
+                <button id="startBtn" class="action-btn">Start Adventure</button>
+                <button id="nextBtn" class="secondary-action">Next Step</button>
+                <button id="autoplayBtn" class="secondary-action">Auto-play</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

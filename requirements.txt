@@ -1,5 +1,6 @@
 # Core dependencies for RPG Chatbot
 gradio>=4.0.0
+flask>=2.3.0
 requests>=2.28.0
 python-dotenv>=1.0.0
 
