@@ -429,6 +429,36 @@ body {
     box-shadow: none;
 }
 
+/* Resume Button (Auto-play Resume) */
+.resume-action {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.resume-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+.resume-action:active {
+    transform: translateY(0);
+}
+
+.resume-action:disabled {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
 /* Loading animation for streaming */
 @keyframes pulse {
     0%, 100% { opacity: 1; }
@@ -504,7 +534,8 @@ body {
     .action-btn,
     .secondary-action,
     .danger-action,
-    .success-action {
+    .success-action,
+    .resume-action {
         flex: 1;
         min-width: 100px;
     }

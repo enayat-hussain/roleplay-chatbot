@@ -5,6 +5,7 @@ let isProcessing = false;
 let gameStarted = false;
 let isAutoPlaying = false;
 let storyComplete = false;
+let autoplayStopped = false; // Track if auto-play was manually stopped
 let abortController = null;
 let selectedContinueMode = 'manual'; // 'manual' or 'auto'
 
@@ -24,6 +25,7 @@ const startBtn = document.getElementById('startBtn');
 const nextBtn = document.getElementById('nextBtn');
 const autoplayBtn = document.getElementById('autoplayBtn');
 const stopBtn = document.getElementById('stopBtn');
+const resumeBtn = document.getElementById('resumeBtn');
 const continueBtn = document.getElementById('continueBtn');
 const newGameBtn = document.getElementById('newGameBtn');
 
@@ -58,6 +60,7 @@ function setupEventListeners() {
     nextBtn.addEventListener('click', nextStep);
     autoplayBtn.addEventListener('click', autoplay);
     stopBtn.addEventListener('click', stopAutoplay);
+    resumeBtn.addEventListener('click', resumeAutoplay);
     continueBtn.addEventListener('click', showContinueModal);
     newGameBtn.addEventListener('click', resetGame);
 
@@ -128,6 +131,9 @@ function setProcessing(processing) {
 
     // Show/hide stop button based on auto-play state
     stopBtn.style.display = isAutoPlaying ? 'block' : 'none';
+
+    // Show resume button when auto-play was stopped (and not complete)
+    resumeBtn.style.display = (autoplayStopped && !storyComplete && !isAutoPlaying) ? 'block' : 'none';
 
     // Show continue button when story is complete
     continueBtn.style.display = storyComplete ? 'block' : 'none';
@@ -208,6 +214,7 @@ async function startGame() {
 
     setProcessing(true);
     storyComplete = false;
+    autoplayStopped = false;
     clearChat();
     setStatus('<strong>Status:</strong> Starting adventure...');
     modelBadge.textContent = `${providerSelect.value} - ${modelSelect.value}`;
@@ -261,6 +268,9 @@ async function startGame() {
 
 async function nextStep() {
     if (isProcessing || !gameStarted) return;
+
+    // Clear the autoplayStopped flag when manually stepping
+    autoplayStopped = false;
 
     setProcessing(true);
     setStatus('<strong>Status:</strong> Taking next step...');
@@ -328,12 +338,14 @@ async function autoplay() {
     setProcessing(true);
     isAutoPlaying = true;
     storyComplete = false;
+    autoplayStopped = false;
     clearChat();
     setStatus('<strong>Status:</strong> Auto-play starting...');
     modelBadge.textContent = `${providerSelect.value} - ${modelSelect.value}`;
 
     // Show stop button
     stopBtn.style.display = 'block';
+    resumeBtn.style.display = 'none';
 
     let currentContent = '';
     let currentStep = 0;
@@ -402,7 +414,8 @@ async function autoplay() {
         }
     } catch (error) {
         if (error.name === 'AbortError') {
-            setStatus(`<strong>Status:</strong> Auto-play stopped at step ${currentStep}. Use "Next Step" to continue manually.`);
+            autoplayStopped = true;
+            setStatus(`<strong>Status:</strong> Auto-play stopped at step ${currentStep}. Click "Resume" to continue auto-play or "Next Step" for manual.`);
         } else {
             setStatus(`<strong>Error:</strong> ${error.message}`);
         }
@@ -422,6 +435,111 @@ function stopAutoplay() {
     }
 }
 
+async function resumeAutoplay() {
+    if (isProcessing) return;
+
+    // Clear the stopped flag and resume auto-play
+    autoplayStopped = false;
+    setProcessing(true);
+    isAutoPlaying = true;
+    stopBtn.style.display = 'block';
+    resumeBtn.style.display = 'none';
+    setStatus('<strong>Status:</strong> Resuming auto-play...');
+
+    let currentContent = '';
+    let currentStep = 0;
+
+    // Create abort controller for this request
+    abortController = new AbortController();
+
+    try {
+        const maxSteps = parseInt(stepsSlider.value);
+
+        // Loop and take steps until we reach max or get stopped
+        while (true) {
+            if (abortController.signal.aborted) break;
+
+            const response = await fetch('/api/step', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(getRequestData()),
+                signal: abortController.signal
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let messageAdded = false;
+            currentContent = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const text = decoder.decode(value);
+                const lines = text.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+
+                            if (data.type === 'chunk') {
+                                if (data.choice && !messageAdded) {
+                                    addMessage('user', data.choice.toString());
+                                    addMessage('bot', '');
+                                    messageAdded = true;
+                                }
+                                currentContent += data.content;
+                                updateLastBotMessage(currentContent);
+                            } else if (data.type === 'done') {
+                                currentStep = data.step;
+                                if (data.complete) {
+                                    storyComplete = true;
+                                    setStatus(`<strong>Status:</strong> Auto-play complete! (${data.step} steps) - Click "Continue Story" to keep playing`);
+                                } else {
+                                    setStatus(`<strong>Status:</strong> Auto-play Step ${currentStep}/${maxSteps}`);
+                                }
+                            } else if (data.type === 'error') {
+                                setStatus(`<strong>Error:</strong> ${data.message}`);
+                                throw new Error(data.message);
+                            }
+                        } catch (e) {
+                            if (e.message) throw e;
+                            // Ignore parse errors
+                        }
+                    }
+                }
+            }
+
+            // Check if we've reached the max or story is complete
+            if (currentStep >= maxSteps || storyComplete) {
+                if (!storyComplete) {
+                    storyComplete = true;
+                    setStatus(`<strong>Status:</strong> Auto-play complete! (${currentStep} steps) - Click "Continue Story" to keep playing`);
+                }
+                break;
+            }
+
+            // Delay between steps
+            const delay = parseInt(delaySlider.value) * 1000;
+            if (delay > 0) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            autoplayStopped = true;
+            setStatus(`<strong>Status:</strong> Auto-play stopped at step ${currentStep}. Click "Resume" to continue auto-play or "Next Step" for manual.`);
+        } else {
+            setStatus(`<strong>Error:</strong> ${error.message}`);
+        }
+    }
+
+    isAutoPlaying = false;
+    abortController = null;
+    setProcessing(false);
+}
+
 async function continueStoryManual(stepsToAdd) {
     if (isProcessing) return;
 
@@ -433,6 +551,7 @@ async function continueStoryManual(stepsToAdd) {
 
     // Reset story complete flag and continue
     storyComplete = false;
+    autoplayStopped = false;
     setProcessing(true);
     setStatus('<strong>Status:</strong> Continuing the story...');
 
@@ -499,9 +618,11 @@ async function continueWithAutoplay(stepsToAdd) {
 
     // Reset story complete and start auto-playing
     storyComplete = false;
+    autoplayStopped = false;
     setProcessing(true);
     isAutoPlaying = true;
     stopBtn.style.display = 'block';
+    resumeBtn.style.display = 'none';
     setStatus('<strong>Status:</strong> Continuing with auto-play...');
 
     let currentContent = '';
@@ -584,7 +705,8 @@ async function continueWithAutoplay(stepsToAdd) {
         }
     } catch (error) {
         if (error.name === 'AbortError') {
-            setStatus(`<strong>Status:</strong> Auto-play stopped at step ${currentStep}. Use "Next Step" to continue manually.`);
+            autoplayStopped = true;
+            setStatus(`<strong>Status:</strong> Auto-play stopped at step ${currentStep}. Click "Resume" to continue auto-play or "Next Step" for manual.`);
         } else {
             setStatus(`<strong>Error:</strong> ${error.message}`);
         }
@@ -615,12 +737,16 @@ async function resetGame() {
     gameStarted = false;
     isAutoPlaying = false;
     storyComplete = false;
+    autoplayStopped = false;
     abortController = null;
 
     // Reset slider to default
     stepsSlider.value = 10;
     stepsSlider.max = 20;
     stepsValue.textContent = '10';
+
+    // Hide resume button
+    resumeBtn.style.display = 'none';
 
     setStatus('Ready to start your adventure. Configure your AI provider and click <strong>Start</strong>.');
     setProcessing(false);
