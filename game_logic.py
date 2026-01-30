@@ -129,7 +129,8 @@ class GameState:
             self.conversation.append(("GM", streamed_response))
             self.chat_logger.append_message("GM", streamed_response)
 
-            yield True, self.conversation, streamed_response
+            # Final yield with empty content to signal completion (content already streamed)
+            yield True, self.conversation, ""
 
         except Exception as e:
             logger.error(f"Error in start_game_streaming: {e}")
@@ -205,7 +206,8 @@ Based on choice {player_choice}, provide a complete and satisfying ending that w
             if is_final_step:
                 self.chat_logger.append_system_message(f"Adventure completed after {self.step_count} steps")
 
-            yield True, self.conversation, player_choice, streamed_response
+            # Final yield with empty content to signal completion (content already streamed)
+            yield True, self.conversation, player_choice, ""
 
         except Exception as e:
             error_msg = f"Error in take_step_streaming: {str(e)}"
