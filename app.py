@@ -424,6 +424,18 @@ class RPGApp:
             color: #cdd6f4 !important;
         }
 
+        /* Fix vertical spacing in sidebar for Windows */
+        .sidebar .block {
+            margin: 0 !important;
+            padding: 4px 0 !important;
+        }
+        .sidebar .form {
+            gap: 8px !important;
+        }
+        .sidebar > div {
+            gap: 4px !important;
+        }
+
         /* Section labels */
         .settings-label {
             font-size: 10px !important;
@@ -709,9 +721,16 @@ class RPGApp:
         }
         """
 
+        # Custom theme to fix Windows black background issue
+        custom_theme = gr.themes.Soft(
+            primary_hue="blue",
+            secondary_hue="slate",
+            neutral_hue="slate",
+        )
+
         with gr.Blocks(
             title="RPG Adventure",
-            theme=gr.themes.Base(),
+            theme=custom_theme,
             css=custom_css,
         ) as demo:
             # State
