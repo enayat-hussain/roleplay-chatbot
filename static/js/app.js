@@ -63,7 +63,7 @@ function setupEventListeners() {
     stopBtn.addEventListener('click', stopAutoplay);
     resumeBtn.addEventListener('click', resumeAutoplay);
     continueBtn.addEventListener('click', showContinueModal);
-    newGameBtn.addEventListener('click', openNewGame);
+    newGameBtn.addEventListener('click', resetGame);
     resetBtn.addEventListener('click', resetGame);
 
     // Modal events
@@ -717,11 +717,6 @@ async function continueWithAutoplay(stepsToAdd) {
     isAutoPlaying = false;
     abortController = null;
     setProcessing(false);
-}
-
-function openNewGame() {
-    // Open the app in a new tab so user can keep current chat
-    window.open(window.location.href, '_blank');
 }
 
 async function resetGame() {

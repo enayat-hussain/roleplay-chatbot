@@ -73,30 +73,6 @@ body {
     transform: translateY(0);
 }
 
-/* Reset Button */
-.reset-btn {
-    background: transparent;
-    color: #a6adc8;
-    border: 1px solid #45475a;
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-weight: 500;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-top: 8px;
-}
-
-.reset-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: #ef4444;
-    color: #ef4444;
-}
-
-.reset-btn:active {
-    transform: scale(0.98);
-}
-
 /* Divider */
 .divider {
     height: 1px;
@@ -483,6 +459,34 @@ body {
     box-shadow: none;
 }
 
+/* Reset Button */
+.reset-action {
+    background: #ffffff;
+    color: #64748b;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.reset-action:hover {
+    background: #fef2f2;
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.reset-action:active {
+    transform: scale(0.98);
+}
+
+.reset-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* Loading animation for streaming */
 @keyframes pulse {
     0%, 100% { opacity: 1; }
@@ -559,7 +563,8 @@ body {
     .secondary-action,
     .danger-action,
     .success-action,
-    .resume-action {
+    .resume-action,
+    .reset-action {
         flex: 1;
         min-width: 100px;
     }
