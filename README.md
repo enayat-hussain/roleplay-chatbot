@@ -4,7 +4,7 @@ A real-time streaming RPG chatbot with **multi-provider support** that creates i
 
 ![UI Preview](https://img.shields.io/badge/UI-Modern%20Dark%20Sidebar-1e1e2e?style=flat-square)
 ![Python](https://img.shields.io/badge/Python-3.8+-3776ab?style=flat-square&logo=python&logoColor=white)
-![Gradio](https://img.shields.io/badge/Gradio-4.0-orange?style=flat-square)
+![Flask](https://img.shields.io/badge/Flask-2.3-black?style=flat-square&logo=flask&logoColor=white)
 
 ## Features
 
@@ -14,8 +14,7 @@ A real-time streaming RPG chatbot with **multi-provider support** that creates i
 * **Dynamic Provider Switching**: Change AI providers and models during gameplay
 * **Interactive RPG**: Dynamic story with player choices and intelligent final step handling
 * **Auto-play Mode**: Watch AI vs AI gameplay with configurable delays
-* **Export Options**: Save adventures as Markdown or plain text
-* **Connection Testing**: Built-in API connection diagnostics for all providers
+* **Cross-Platform**: Works consistently on Mac, Windows, and Linux
 * **Modern UI**: Clean, professional interface inspired by ChatGPT/Claude with dark sidebar
 
 ### Supported AI Providers
@@ -26,8 +25,6 @@ A real-time streaming RPG chatbot with **multi-provider support** that creates i
 * **Ollama** (Local: Llama 3.1, Mistral, CodeLlama, Vicuna, Gemma)
 * **Groq** (Fast inference: Llama, Mixtral, Gemma models)
 * **LM Studio** (Local model server)
-* **Text Generation WebUI** (oobabooga)
-* **VLLM** (High-performance local serving)
 * **Custom Providers** (Any OpenAI-compatible API)
 
 ## Quick Start
@@ -102,7 +99,7 @@ ollama serve
 1. **Select Provider**: Choose from OpenAI, Anthropic, Ollama, etc. in the dark sidebar
 2. **Select Model**: Pick the specific model you want to use
 3. **Add API Key**: Enter your API key (if required by provider)
-4. **Set Max Steps**: Choose adventure length (1-100 steps)
+4. **Set Max Steps**: Choose adventure length (1-20 steps)
 5. **Start Playing**: Click "Start Adventure" and make choices!
 
 ### Game Modes
@@ -111,7 +108,7 @@ ollama serve
 * Click "Start Adventure" to begin
 * Use "Next Step" to advance step by step
 * Watch responses stream in real-time
-* Final steps automatically provide 8-9 line conclusions
+* Final steps automatically provide conclusions
 
 #### Auto-play Mode
 * Click "Auto-play" for hands-free adventure
@@ -119,20 +116,29 @@ ollama serve
 * Perfect for demonstrations or relaxed gameplay
 * Watch AI make choices and respond automatically
 
-#### Advanced Features
+#### Controls
 * **New Game**: Reset and start fresh with "+ New Game" button
-* **Export & Save**: Save memorable adventures as Markdown/text
-* **Game Statistics**: View detailed game information and progress
+* **Start Adventure**: Begin a new game
+* **Next Step**: Take the next step in the adventure
+* **Auto-play**: Let the AI play automatically
 
 ## Project Structure
 
 ```
 roleplay-chatbot/
-├── app.py                # Main Gradio application (UI + provider selection)
+├── app.py                # Main Flask application
 ├── chatbot.py            # Universal AI client with auto-detection of LLMs
 ├── game_logic.py         # RPG game state management + intelligent endings
 ├── config.py             # Configuration settings (paths, constants, defaults)
-├── prompts.py            # Centralized prompt definitions (optional helper)
+│
+├── templates/            # HTML templates
+│   └── index.html        # Main UI template
+│
+├── static/               # Static assets
+│   ├── css/
+│   │   └── style.css     # UI styling (dark sidebar, light chat)
+│   └── js/
+│       └── app.js        # Frontend JavaScript (streaming, interactions)
 │
 ├── requirements.txt      # Python dependencies
 ├── .env.example          # Template for environment variables
@@ -150,8 +156,6 @@ roleplay-chatbot/
 
 ### Default Provider URLs and Models
 
-The application comes with pre-configured settings for each provider:
-
 | Provider | Default URL | Default Model | API Key Required |
 |----------|-------------|---------------|------------------|
 | **OpenAI (GPT)** | `https://api.openai.com/v1/chat/completions` | `gpt-4o-mini` | Yes |
@@ -161,44 +165,6 @@ The application comes with pre-configured settings for each provider:
 | **Ollama (Local)** | `http://localhost:11434/v1/chat/completions` | `llama3.1` | No |
 | **Groq** | `https://api.groq.com/openai/v1/chat/completions` | `llama-3.1-8b-instant` | Yes |
 | **LM Studio** | `http://localhost:1234/v1/chat/completions` | `local-model` | No |
-| **Text Generation WebUI** | `http://localhost:5000/v1/chat/completions` | `local-model` | No |
-| **VLLM** | `http://localhost:8000/v1/chat/completions` | `local-model` | No |
-
-### Available Models by Provider
-
-**OpenAI Models:**
-- `gpt-4o` (latest GPT-4 Omni)
-- `gpt-4o-mini` (cost-efficient, recommended)
-- `gpt-4-turbo` (previous generation)
-- `gpt-3.5-turbo` (legacy, cost-effective)
-
-**Anthropic Models:**
-- `claude-3-5-sonnet-20241022` (latest, most capable)
-- `claude-3-haiku-20240307` (fast, cost-effective)
-- `claude-3-opus-20240229` (most powerful, expensive)
-
-**Google Gemini Models:**
-- `gemini-2.5-flash-lite` (fast, low-cost, high-performance)
-- `gemini-2.0-flash` (recommended, balanced)
-- `gemini-2.0-flash-lite` (ultra-efficient, high-frequency tasks)
-
-**DeepSeek Models:**
-- `deepseek-chat` (general purpose, recommended)
-- `deepseek-coder` (optimized for coding tasks)
-- `deepseek-reasoner` (enhanced reasoning capabilities)
-
-**Groq Models:**
-- `llama-3.1-8b-instant` (recommended, very fast)
-- `meta-llama/llama-4-scout-17b-16e-instruct` (experimental)
-- `gemma2-9b-it` (Google's Gemma model)
-
-**Ollama Models:** (depends on what you have installed)
-- `llama3.1` (recommended)
-- `llama3:latest`
-- `mistral`
-- `codellama`
-- `vicuna`
-- `gemma:2b`
 
 ### Environment Variables
 
@@ -208,14 +174,12 @@ The application comes with pre-configured settings for each provider:
 | `API_URL`           | varies by provider         | API endpoint URL                             |
 | `MODEL`             | varies by provider         | AI model name                                |
 | `API_KEY`           | None                       | API key for authentication                   |
-| `SERVER_HOST`       | 127.0.0.1                  | Gradio server host                           |
-| `SERVER_PORT`       | 7860                       | Gradio server port                           |
+| `SERVER_HOST`       | 127.0.0.1                  | Flask server host                            |
+| `SERVER_PORT`       | 7860                       | Flask server port                            |
 | `DEFAULT_MAX_STEPS` | 5                          | Default number of game steps                 |
-| `MAX_STEPS_LIMIT`   | 100                        | Maximum allowed steps                        |
+| `MAX_STEPS_LIMIT`   | 20                         | Maximum allowed steps                        |
 | `DEFAULT_DELAY`     | 2                          | Default delay between steps (seconds)        |
 | `MAX_DELAY`         | 10                         | Maximum delay between steps                  |
-| `AI_TEMPERATURE`    | 0.8                        | AI creativity level (0.0-2.0)               |
-| `AI_MAX_TOKENS`     | 500                        | Maximum tokens per response                  |
 
 ### Custom Prompts
 
@@ -243,32 +207,14 @@ ollama serve
 - URL: `http://localhost:1234/v1/chat/completions`
 - No API key required
 
-### Text Generation WebUI
-```bash
-git clone https://github.com/oobabooga/text-generation-webui.git
-cd text-generation-webui
-./start_linux.sh --api --listen
-```
-- URL: `http://localhost:5000/v1/chat/completions`
-
 ## Troubleshooting
-
-### Recent Fixes Applied
-* **Fixed Unicode/spelling issues** - Proper UTF-8 encoding handling
-* **Improved streaming reliability** - Better error handling and fallbacks
-* **Chat logs saving** - Each conversation now saved as a `.txt` file
-* **Multi-LLM support** - App now works seamlessly with different LLM providers
-* **Step-limited endings** - Story automatically ends after reaching max number of steps
-* **UI overhaul** - Modern dark sidebar design with Catppuccin color scheme
-* **Fixed alignment issues** - Chat box, status bar, and buttons properly aligned
-* **Compact buttons** - Appropriately sized action buttons
 
 ### Common Issues
 
 **Connection Errors**
 * Verify API key is correct
 * Check if local servers are running (`ollama serve`)
-* Use Advanced Options to test connections
+* Try a different provider
 
 **Provider Issues**
 * Try switching providers via the sidebar dropdown
@@ -276,44 +222,8 @@ cd text-generation-webui
 * Check API rate limits and billing status
 
 **Response Quality**
-* Adjust temperature settings for creativity
 * Try different models within the same provider
-* Use the export feature to save good adventures
-
-### System Status
-Use the built-in connection testing features:
-* **"Test Connection"** - Check current configuration in Advanced Options
-* **"Show Game Info"** - View current game state and provider details
-
-## Requirements
-
-* Python 3.8+
-* AI provider access (local server OR cloud API key)
-* 4GB+ RAM (for local models)
-* Internet connection (for cloud providers)
-
-## Contributing
-
-Areas for improvement:
-* Additional AI provider support
-* Enhanced prompt templates
-* Better error handling
-* UI/UX improvements
-
-1. Fork the repository
-2. Create a feature branch
-3. Test thoroughly with multiple providers
-4. Submit a pull request
-
-## Support
-
-If you encounter issues:
-
-1. **Check troubleshooting section** above
-2. **Use built-in connection testing** via Advanced Options
-3. **Try different providers** - some may work better than others
-4. **Review console output** for detailed error messages
-5. **Open GitHub issue** with provider details and error logs
+* Adjust the number of steps for longer adventures
 
 ### Provider-Specific Support
 
@@ -323,8 +233,25 @@ If you encounter issues:
 **DeepSeek**: Get API key from DeepSeek platform (https://platform.deepseek.com)
 **Ollama**: Ensure `ollama serve` is running
 **Groq**: Check free tier limits
-**Local Models**: Verify server status and model loading
+
+## Requirements
+
+* Python 3.8+
+* AI provider access (local server OR cloud API key)
+* Modern web browser
+
+## Contributing
+
+Areas for improvement:
+* Additional AI provider support
+* Enhanced prompt templates
+* UI/UX improvements
+
+1. Fork the repository
+2. Create a feature branch
+3. Test thoroughly with multiple providers
+4. Submit a pull request
 
 ---
 
-*Built with Gradio and configurable AI APIs - Supporting 10+ providers!*
+*Built with Flask - Supporting 8+ AI providers!*
